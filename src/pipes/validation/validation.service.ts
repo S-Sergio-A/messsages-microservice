@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { GlobalErrorCodes } from "../../exceptions/errorCodes/GlobalErrorCodes";
-import { MessageDto } from "../../messages/dto/message.dto";
+import { MessageDto } from "../../messages/message.dto";
 import { InternalFailure } from "../interfaces/internal-failure.interface";
 import { Message } from "../interfaces/message";
 import { v4 } from "uuid";
