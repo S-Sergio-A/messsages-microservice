@@ -17,7 +17,7 @@ import { MessagesService } from "./messages.service";
 import { MessageDto } from "./message.dto";
 
 @Injectable()
-@WebSocketGateway(Number.parseInt(process.env.PORT) || 1080)
+@WebSocketGateway(Number.parseInt(process.env.WS_PORT) || 1080)
 export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(@Inject(forwardRef(() => MessagesService)) private readonly messagesService: MessagesService) {}
 
