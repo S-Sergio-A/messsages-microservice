@@ -66,6 +66,25 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       });
     }
   }
+  
+  @SubscribeMessage("")
+  async all(@MessageBody() data: string, @ConnectedSocket() client: Socket) {
+    try {
+      console.log(data);
+      const messageData: MessageDto & { rights: string[] } = JSON.parse(data);
+      
+      await this.messagesService.addMessage(messageData);
+      client.emit("receive-message", messageData.text);
+      return new Observable((observer) => observer.next({ event: "receive-message", data: messageData.text }));
+    } catch (e) {
+      console.log(e.stack);
+      throw new WsException({
+        key: "INTERNAL_ERROR",
+        code: GlobalErrorCodes.INTERNAL_ERROR.code,
+        message: GlobalErrorCodes.INTERNAL_ERROR.value
+      });
+    }
+  }
 
   @UsePipes(new MessageValidationPipe())
   @SubscribeMessage("message")
