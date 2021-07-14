@@ -68,7 +68,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   @UsePipes(new MessageValidationPipe())
-  @SubscribeMessage("receive-message")
+  @SubscribeMessage("message")
   async onMessageCreation(@MessageBody() data: string, @ConnectedSocket() client: Socket) {
     try {
       console.log(data);
