@@ -38,8 +38,11 @@ export class MessagesService {
     }
   }
 
-  async updateMessage(messageDto: MessageDto): Promise<HttpStatus | Error> {
+  async updateMessage(messageDto: MessageDto, rights: string[]): Promise<HttpStatus | Error> {
     try {
+      // if (!rights.includes("UPDATE_MESSAGE")){
+      //
+      // }
       const message = await this.messageModel.findOne({ id: messageDto.id });
       
       if (message.userId !== messageDto.userId){

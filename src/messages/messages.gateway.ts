@@ -81,17 +81,15 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   @UsePipes(new MessageValidationPipe())
   @SubscribeMessage("new-message")
-  async onMessageCreation(@MessageBody() data: string, @ConnectedSocket() socket: Socket) {
+  async onMessageCreation(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
       let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
 
       if (typeof rights === "string") {
         rights = [...rights];
       }
-
-      const messageData: MessageDto = JSON.parse(data);
-
-      return await this.messagesService.addMessage(messageData, rights);
+      
+      return await this.messagesService.addMessage(data, rights);
     } catch (e) {
       console.log(e.stack);
       socket.send(
@@ -109,11 +107,15 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
    */
   @UsePipes(new MessageValidationPipe())
   @SubscribeMessage("update-message")
-  async onMessageUpdate(@MessageBody() data: string, @ConnectedSocket() socket: Socket) {
+  async onMessageUpdate(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
-      const messageData: MessageDto = JSON.parse(data);
-
-      return await this.messagesService.updateMessage(messageData);
+      let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
+  
+      if (typeof rights === "string") {
+        rights = [...rights];
+      }
+  
+      return await this.messagesService.updateMessage(data, rights);
     } catch (e) {
       console.log(e.stack);
       socket.send(
