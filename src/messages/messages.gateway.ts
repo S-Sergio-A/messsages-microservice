@@ -17,7 +17,7 @@ import { MessagesService } from "./messages.service";
 import { MessageDto } from "./message.dto";
 
 @Injectable()
-@WebSocketGateway()
+@WebSocketGateway({ namespace: "socket.io" })
 export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(@Inject(forwardRef(() => MessagesService)) private readonly messagesService: MessagesService) {}
 
@@ -66,13 +66,13 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       });
     }
   }
-  
+
   @SubscribeMessage("")
   async all(@MessageBody() data: string, @ConnectedSocket() client: Socket) {
     try {
       console.log(data);
       const messageData: MessageDto & { rights: string[] } = JSON.parse(data);
-      
+
       await this.messagesService.addMessage(messageData);
       client.emit("receive-message", messageData.text);
       return new Observable((observer) => observer.next({ event: "receive-message", data: messageData.text }));
