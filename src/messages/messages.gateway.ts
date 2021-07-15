@@ -28,20 +28,20 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   async handleConnection(@ConnectedSocket() socket: Socket) {
     try {
-      console.log(socket);
       const queryParams = socket.handshake.query;
-  
-      console.log(queryParams);
-      
+
+      // @ts-ignore
+      console.log(queryParams, queryParams[0], queryParams.roomId);
+
       const userId = queryParams[1];
       const roomId = queryParams[3];
-  
-      console.log(queryParams);
-      
+
       // this.connectedUsers.push({ userId, roomId });
 
-      socket.send("users", this.connectedUsers);
-      this.server.emit("users", this.connectedUsers);
+      const usersConnectedToThisRoom = this.connectedUsers.filter((item) => item.roomId === queryParams.roomId);
+
+      socket.send("users", usersConnectedToThisRoom);
+      // this.server.emit("users", usersConnectedToThisRoom);
     } catch (e) {
       console.log(e.stack);
       throw new WsException({
@@ -54,7 +54,9 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   async handleDisconnect(@ConnectedSocket() socket: Socket) {
     try {
-      const userId = socket.handshake.query[1];
+      const queryParams = socket.handshake.query;
+
+      const userId = queryParams.userId;
       const userPosition = this.connectedUsers.findIndex((item, index) => item.userId === userId);
 
       if (userPosition > -1) {
@@ -77,7 +79,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage("message")
   async onMessageCreation(@MessageBody() data: string, @ConnectedSocket() client: Socket) {
     try {
-      console.log(data);
+      console.log("data", data, "client", client);
       const messageData: MessageDto & { rights: string[] } = JSON.parse(data);
 
       await this.messagesService.addMessage(messageData);
