@@ -83,13 +83,13 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage("new-message")
   async onMessageCreation(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
-      let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
-
-      if (typeof rights === "string") {
-        rights = [...rights];
-      }
+      // let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
+      //
+      // if (typeof rights === "string") {
+      //   rights = [...rights];
+      // }
       
-      return await this.messagesService.addMessage(data, rights);
+      return await this.messagesService.addMessage(data, ["SEND_MESSAGES"]);
     } catch (e) {
       console.log(e.stack);
       socket.send(
