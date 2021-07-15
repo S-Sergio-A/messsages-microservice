@@ -8,9 +8,11 @@ import sanitizeHtml from "sanitize-html";
 
 @Injectable()
 export class ValidationService {
-  async validateMessage(data: MessageDto) {
+  async validateMessage(data: any) {
     let errors: Partial<Message & InternalFailure> = {};
-
+  
+    console.log(data);
+    
     try {
       if (await this._isEmpty(data.id)) {
         data.id = v4();
