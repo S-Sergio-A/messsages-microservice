@@ -6,7 +6,8 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  WsException
+  WsException,
+  WsResponse
 } from "@nestjs/websockets";
 import { forwardRef, Inject, Injectable, UsePipes } from "@nestjs/common";
 import { Observable } from "rxjs";
@@ -30,13 +31,10 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     try {
       const queryParams = socket.handshake.query;
 
-      // @ts-ignore
-      console.log(queryParams, queryParams[0], queryParams.roomId);
+      const userId = queryParams.userId.toString();
+      const roomId = queryParams.roomId.toString();
 
-      const userId = queryParams[1];
-      const roomId = queryParams[3];
-
-      // this.connectedUsers.push({ userId, roomId });
+      this.connectedUsers.push({ userId, roomId });
 
       const usersConnectedToThisRoom = this.connectedUsers.filter((item) => item.roomId === queryParams.roomId);
 
@@ -56,8 +54,10 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     try {
       const queryParams = socket.handshake.query;
 
-      const userId = queryParams.userId;
-      const userPosition = this.connectedUsers.findIndex((item, index) => item.userId === userId);
+      const userId = queryParams.userId.toString();
+      const roomId = queryParams.roomId.toString();
+
+      const userPosition = this.connectedUsers.findIndex((item, index) => item.userId === userId && item.roomId === roomId);
 
       if (userPosition > -1) {
         this.connectedUsers = [...this.connectedUsers.slice(0, userPosition), ...this.connectedUsers.slice(userPosition + 1)];
@@ -76,35 +76,18 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   @UsePipes(new MessageValidationPipe())
-  @SubscribeMessage("message")
-  async onMessageCreation(@MessageBody() data: string, @ConnectedSocket() client: Socket) {
+  @SubscribeMessage("new-message")
+  async onMessageCreation(@MessageBody() data: string, @ConnectedSocket() socket: Socket) {
     try {
-      console.log("data", data, "client", client);
-      const messageData: MessageDto & { rights: string[] } = JSON.parse(data);
+      let rights = socket.handshake.headers["rights"];
 
-      await this.messagesService.addMessage(messageData);
-      client.emit("receive-message", messageData.text);
-      return new Observable((observer) => observer.next({ event: "receive-message", data: messageData.text }));
-    } catch (e) {
-      console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
-    }
-  }
+      if (typeof rights === "string") {
+        rights = [...rights];
+      }
 
-  @UsePipes(new MessageValidationPipe())
-  @SubscribeMessage("update-message")
-  async onMessageUpdate(@MessageBody() data: string, @ConnectedSocket() client: Socket) {
-    try {
-      console.log(data);
       const messageData: MessageDto = JSON.parse(data);
 
-      await this.messagesService.updateMessage(messageData);
-      client.emit("update-message", messageData.text);
-      return new Observable((observer) => observer.next({ event: "update-message", data: messageData.text }));
+      return await this.messagesService.addMessage(messageData, rights);
     } catch (e) {
       console.log(e.stack);
       throw new WsException({
@@ -115,15 +98,39 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
-  @SubscribeMessage("delete-message")
-  async onDelete(@MessageBody() data: string, @ConnectedSocket() client: Socket) {
+  /* Not working
+   */
+  @UsePipes(new MessageValidationPipe())
+  @SubscribeMessage("update-message")
+  async onMessageUpdate(@MessageBody() data: string, @ConnectedSocket() socket: Socket) {
     try {
-      console.log(data);
-      const messageData: MessageDto & { rights: string[] } = JSON.parse(data);
+      const messageData: MessageDto = JSON.parse(data);
 
-      await this.messagesService.deleteMessage(messageData.rights, messageData.id, messageData.roomId);
-      client.emit("delete-message", messageData.text);
-      return new Observable((observer) => observer.next({ event: "delete-message", data: messageData.text }));
+      return await this.messagesService.updateMessage(messageData);
+    } catch (e) {
+      console.log(e.stack);
+      throw new WsException({
+        key: "INTERNAL_ERROR",
+        code: GlobalErrorCodes.INTERNAL_ERROR.code,
+        message: GlobalErrorCodes.INTERNAL_ERROR.value
+      });
+    }
+  }
+
+  /* Not working
+   */
+  @SubscribeMessage("delete-message")
+  async onDelete(@MessageBody() data: string, @ConnectedSocket() socket: Socket) {
+    try {
+      const queryParams = socket.handshake.query;
+
+      const userId = queryParams.userId.toString();
+      const roomId = queryParams.roomId.toString();
+      const rights = socket.handshake.headers["rights"];
+
+      const messageData: { id: string } = JSON.parse(data);
+
+      return await this.messagesService.deleteMessage(rights, messageData.id, roomId, userId);
     } catch (e) {
       console.log(e.stack);
       throw new WsException({
@@ -135,14 +142,17 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   @SubscribeMessage("load-more-messages")
-  async loadMoreMessages(@MessageBody() data: string, @ConnectedSocket() client: Socket): Promise<any> {
+  async loadMoreMessages(@MessageBody() data: string, @ConnectedSocket() socket: Socket): Promise<any> {
     try {
-      console.log(data);
-      const requestData: { roomId: string; start: number; end: number } = JSON.parse(data);
+      const queryParams = socket.handshake.query;
 
-      const messages = await this.messagesService.getRoomMessagesLimited(requestData.roomId, requestData.start, requestData.end);
+      const roomId = queryParams.roomId.toString();
 
-      client.emit("message", messages);
+      const requestData: { start: number; end: number } = JSON.parse(data);
+
+      const messages = await this.messagesService.getRoomMessagesLimited(roomId, requestData.start, requestData.end);
+
+      socket.send("more-messages", messages);
     } catch (e) {
       console.log(e.stack);
       throw new WsException({
@@ -153,15 +163,16 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
-  @SubscribeMessage("join-room")
-  async onRoomJoin(@MessageBody() data: string, @ConnectedSocket() client: Socket): Promise<any> {
+  @SubscribeMessage("load-last-messages")
+  async onRoomJoin(@MessageBody() data: string, @ConnectedSocket() socket: Socket): Promise<any> {
     try {
-      console.log(data);
-      const requestData: { roomId: string } = JSON.parse(data);
+      const queryParams = socket.handshake.query;
 
-      const messages = await this.messagesService.getRoomMessagesLimited(requestData.roomId, 0, 50);
+      const roomId = queryParams.roomId.toString();
 
-      client.emit("message", messages);
+      const messages = await this.messagesService.getRoomMessagesLimited(roomId, 0, 50);
+
+      socket.send("last-messages", messages);
     } catch (e) {
       console.log(e.stack);
       throw new WsException({
@@ -172,10 +183,17 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
+  /* Not working
+   */
   @SubscribeMessage("leave-room")
-  onRoomLeave(client, data: any): void {
+  onRoomLeave(@ConnectedSocket() socket: Socket): void {
     try {
-      client.leave(data[0]);
+      const queryParams = socket.handshake.query;
+
+      const userId = queryParams.userId.toString();
+      const roomId = queryParams.roomId.toString();
+
+      socket.leave(roomId);
     } catch (e) {
       console.log(e.stack);
       throw new WsException({

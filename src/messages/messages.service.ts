@@ -23,24 +23,11 @@ export class MessagesService {
 
   client: ClientProxy;
 
-  async addMessage(messageDto: MessageDto & { rights: string[] }): Promise<Observable<any>> {
+  async addMessage(messageDto: MessageDto, rights: string[]): Promise<Observable<any>> {
     try {
       const createdMessage = new this.messageModel(messageDto);
       await createdMessage.save();
-      return await this._addMessageReferenceToRoom(messageDto.rights, messageDto.id, messageDto.roomId);
-    } catch (e) {
-      console.log(e.stack);
-      throw new InternalException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
-    }
-  }
-
-  async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
-    try {
-      return this.messageModel.find({ roomId: roomId }).sort({ id: -1 }).skip(start).limit(end);
+      return await this._addMessageReferenceToRoom(rights, messageDto.id, messageDto.roomId);
     } catch (e) {
       console.log(e.stack);
       throw new InternalException({
@@ -54,15 +41,19 @@ export class MessagesService {
   async updateMessage(messageDto: MessageDto): Promise<HttpStatus | Error> {
     try {
       const message = await this.messageModel.findOne({ id: messageDto.id });
+      
+      if (message.userId !== messageDto.userId){
+        return HttpStatus.FORBIDDEN;
+      }
 
       const updatedMessage = {
         _id: message._id,
-        id: messageDto.id,
-        roomId: messageDto.roomId ? messageDto.roomId : message.roomId,
-        userId: messageDto.userId ? messageDto.userId : message.userId,
+        id: message.id,
+        roomId: message.roomId,
+        userId: message.userId,
         text: messageDto.text ? messageDto.text : message.text,
         attachment: messageDto.attachment ? messageDto.attachment : message.attachment,
-        timestamp: messageDto.timestamp ? messageDto.timestamp : message.timestamp
+        timestamp: message.timestamp
       };
       await this.messageModel.updateOne({ id: messageDto.id }, updatedMessage);
       return HttpStatus.CREATED;
@@ -75,18 +66,24 @@ export class MessagesService {
       });
     }
   }
-
-  async searchMessages(keyword: string): Promise<MessageDocument[] | RpcException> {
+  
+  async searchMessages(roomId: string, keyword: string): Promise<MessageDocument[] | RpcException> {
     try {
-      return this.messageModel.find({ text: keyword });
+      const regex = new RegExp(keyword, "i");
+      
+      return this.messageModel.find({ roomId, text: regex });
     } catch (e) {
       console.log(e.stack);
       return new RpcException(e);
     }
   }
-
-  async deleteMessage(rights, messageId, roomId): Promise<HttpStatus | Observable<any>> {
+  
+  async deleteMessage(rights, messageId, roomId, userId): Promise<HttpStatus | Observable<any>> {
     try {
+      if (rights.includes("DELETE_MESSAGES")){
+      
+      }
+      
       const { deletedCount } = await this.messageModel.deleteOne({ id: messageId });
 
       if (deletedCount !== 0) {
@@ -103,7 +100,20 @@ export class MessagesService {
       });
     }
   }
-
+  
+  async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
+    try {
+      return this.messageModel.find({ roomId: roomId }).sort({ id: -1 }).skip(start).limit(end);
+    } catch (e) {
+      console.log(e.stack);
+      throw new InternalException({
+        key: "INTERNAL_ERROR",
+        code: GlobalErrorCodes.INTERNAL_ERROR.code,
+        message: GlobalErrorCodes.INTERNAL_ERROR.value
+      });
+    }
+  }
+  
   private async _addMessageReferenceToRoom(rights: string[], messageId: string, roomId: string): Promise<Observable<any>> {
     try {
       return this.client.send(
