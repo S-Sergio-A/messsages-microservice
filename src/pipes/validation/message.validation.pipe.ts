@@ -13,7 +13,7 @@ export class MessageValidationPipe implements PipeTransform {
       return value;
     }
 
-    const { errors, isValid } = await ValidationService.prototype.validateMessage(value);
+    const { errors, isValid } = await ValidationService.prototype.validateMessage(JSON.parse(value));
 
     if (isValid) {
       return value;

@@ -6,7 +6,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  WsException,
+  WsException
 } from "@nestjs/websockets";
 import { forwardRef, Inject, Injectable, UsePipes } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
@@ -40,11 +40,14 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       // this.server.emit("users", usersConnectedToThisRoom);
     } catch (e) {
       console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
+      socket.send(
+        "error",
+        new WsException({
+          key: "INTERNAL_ERROR",
+          code: GlobalErrorCodes.INTERNAL_ERROR.code,
+          message: GlobalErrorCodes.INTERNAL_ERROR.value
+        })
+      );
     }
   }
 
@@ -65,11 +68,14 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       this.server.emit("users", this.connectedUsers);
     } catch (e) {
       console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
+      socket.send(
+        "error",
+        new WsException({
+          key: "INTERNAL_ERROR",
+          code: GlobalErrorCodes.INTERNAL_ERROR.code,
+          message: GlobalErrorCodes.INTERNAL_ERROR.value
+        })
+      );
     }
   }
 
@@ -88,11 +94,14 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       return await this.messagesService.addMessage(messageData, rights);
     } catch (e) {
       console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
+      socket.send(
+        "error",
+        new WsException({
+          key: "INTERNAL_ERROR",
+          code: GlobalErrorCodes.INTERNAL_ERROR.code,
+          message: GlobalErrorCodes.INTERNAL_ERROR.value
+        })
+      );
     }
   }
 
@@ -107,11 +116,14 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       return await this.messagesService.updateMessage(messageData);
     } catch (e) {
       console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
+      socket.send(
+        "error",
+        new WsException({
+          key: "INTERNAL_ERROR",
+          code: GlobalErrorCodes.INTERNAL_ERROR.code,
+          message: GlobalErrorCodes.INTERNAL_ERROR.value
+        })
+      );
     }
   }
 
@@ -131,11 +143,14 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       return await this.messagesService.deleteMessage(rights, messageData.id, roomId, userId);
     } catch (e) {
       console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
+      socket.send(
+        "error",
+        new WsException({
+          key: "INTERNAL_ERROR",
+          code: GlobalErrorCodes.INTERNAL_ERROR.code,
+          message: GlobalErrorCodes.INTERNAL_ERROR.value
+        })
+      );
     }
   }
 
@@ -153,11 +168,14 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       socket.send("more-messages", messages);
     } catch (e) {
       console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
+      socket.send(
+        "error",
+        new WsException({
+          key: "INTERNAL_ERROR",
+          code: GlobalErrorCodes.INTERNAL_ERROR.code,
+          message: GlobalErrorCodes.INTERNAL_ERROR.value
+        })
+      );
     }
   }
 
@@ -173,11 +191,14 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       socket.send("last-messages", messages);
     } catch (e) {
       console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
+      socket.send(
+        "error",
+        new WsException({
+          key: "INTERNAL_ERROR",
+          code: GlobalErrorCodes.INTERNAL_ERROR.code,
+          message: GlobalErrorCodes.INTERNAL_ERROR.value
+        })
+      );
     }
   }
 
@@ -194,11 +215,14 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       socket.leave(roomId);
     } catch (e) {
       console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
+      socket.send(
+        "error",
+        new WsException({
+          key: "INTERNAL_ERROR",
+          code: GlobalErrorCodes.INTERNAL_ERROR.code,
+          message: GlobalErrorCodes.INTERNAL_ERROR.value
+        })
+      );
     }
   }
 }
