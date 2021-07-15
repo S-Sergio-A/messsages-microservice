@@ -10,7 +10,7 @@ import {
 } from "@nestjs/websockets";
 import { forwardRef, Inject, Injectable, UsePipes } from "@nestjs/common";
 import { Observable } from "rxjs";
-import { Socket } from "net";
+import { Server, Socket } from "socket.io";
 import { MessageValidationPipe } from "../pipes/validation/message.validation.pipe";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
 import { MessagesService } from "./messages.service";
@@ -22,16 +22,18 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   constructor(@Inject(forwardRef(() => MessagesService)) private readonly messagesService: MessagesService) {}
 
   @WebSocketServer()
-  server;
+  server: Server;
 
   private connectedUsers: { userId: string; roomId: string }[] = [];
 
-  async handleConnection(socket, message) {
+  async handleConnection(socket) {
     try {
-      const queryParams = message.url.split("=");
+      const queryParams = socket.handshake.query;
       const userId = queryParams[1];
       const roomId = queryParams[3];
-
+  
+      console.log(queryParams);
+      
       this.connectedUsers.push({ userId, roomId });
 
       socket.send("users", this.connectedUsers);
@@ -57,25 +59,6 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
       socket.send("users", this.connectedUsers);
       this.server.emit("users", this.connectedUsers);
-    } catch (e) {
-      console.log(e.stack);
-      throw new WsException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
-    }
-  }
-
-  @SubscribeMessage("")
-  async all(@MessageBody() data: string, @ConnectedSocket() client: Socket) {
-    try {
-      console.log(data);
-      const messageData: MessageDto & { rights: string[] } = JSON.parse(data);
-
-      await this.messagesService.addMessage(messageData);
-      client.emit("receive-message", messageData.text);
-      return new Observable((observer) => observer.next({ event: "receive-message", data: messageData.text }));
     } catch (e) {
       console.log(e.stack);
       throw new WsException({
