@@ -17,7 +17,7 @@ import { MessagesService } from "./messages.service";
 import { MessageDto } from "./message.dto";
 
 @Injectable()
-@WebSocketGateway({ namespace: "socket.io" })
+@WebSocketGateway(8000, { path: "/socket.io", perMessageDeflate: false })
 export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(@Inject(forwardRef(() => MessagesService)) private readonly messagesService: MessagesService) {}
 
@@ -26,15 +26,19 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   private connectedUsers: { userId: string; roomId: string }[] = [];
 
-  async handleConnection(socket) {
+  async handleConnection(@ConnectedSocket() socket: Socket) {
     try {
+      console.log(socket);
       const queryParams = socket.handshake.query;
+  
+      console.log(queryParams);
+      
       const userId = queryParams[1];
       const roomId = queryParams[3];
   
       console.log(queryParams);
       
-      this.connectedUsers.push({ userId, roomId });
+      // this.connectedUsers.push({ userId, roomId });
 
       socket.send("users", this.connectedUsers);
       this.server.emit("users", this.connectedUsers);
@@ -48,9 +52,9 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
-  async handleDisconnect(socket) {
+  async handleDisconnect(@ConnectedSocket() socket: Socket) {
     try {
-      const userId = socket.url.split("=")[1];
+      const userId = socket.handshake.query[1];
       const userPosition = this.connectedUsers.findIndex((item, index) => item.userId === userId);
 
       if (userPosition > -1) {
