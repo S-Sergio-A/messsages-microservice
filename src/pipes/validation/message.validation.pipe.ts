@@ -5,6 +5,7 @@ import { ValidationService } from "./validation.service";
 @Injectable()
 export class MessageValidationPipe implements PipeTransform {
   async transform(value, metadata: ArgumentMetadata) {
+    console.log(value);
     value = JSON.parse(value);
 
     if (!value) {

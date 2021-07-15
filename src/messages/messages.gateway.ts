@@ -83,6 +83,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage("new-message")
   async onMessageCreation(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
+      console.log(data);
       // let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
       //
       // if (typeof rights === "string") {

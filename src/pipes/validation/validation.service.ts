@@ -10,8 +10,6 @@ import sanitizeHtml from "sanitize-html";
 export class ValidationService {
   async validateMessage(data: any) {
     let errors: Partial<Message & InternalFailure> = {};
-  
-    console.log(data);
     
     try {
       if (await this._isEmpty(data.id)) {
