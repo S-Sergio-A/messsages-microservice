@@ -7,10 +7,8 @@ import {
   WebSocketGateway,
   WebSocketServer,
   WsException,
-  WsResponse
 } from "@nestjs/websockets";
 import { forwardRef, Inject, Injectable, UsePipes } from "@nestjs/common";
-import { Observable } from "rxjs";
 import { Server, Socket } from "socket.io";
 import { MessageValidationPipe } from "../pipes/validation/message.validation.pipe";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
@@ -79,7 +77,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage("new-message")
   async onMessageCreation(@MessageBody() data: string, @ConnectedSocket() socket: Socket) {
     try {
-      let rights = socket.handshake.headers["rights"];
+      let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
 
       if (typeof rights === "string") {
         rights = [...rights];
@@ -126,7 +124,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
       const userId = queryParams.userId.toString();
       const roomId = queryParams.roomId.toString();
-      const rights = socket.handshake.headers["rights"];
+      let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
 
       const messageData: { id: string } = JSON.parse(data);
 

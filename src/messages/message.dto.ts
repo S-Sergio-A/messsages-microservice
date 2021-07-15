@@ -1,8 +1,6 @@
 import { IsDefined, IsNotEmpty, IsString } from "class-validator";
 
 export class MessageDto {
-  @IsDefined()
-  @IsNotEmpty()
   @IsString()
   id: string;
   
@@ -21,8 +19,6 @@ export class MessageDto {
   @IsString()
   text: string;
   
-  @IsDefined()
-  @IsNotEmpty()
   @IsString()
   attachment?: string;
   
