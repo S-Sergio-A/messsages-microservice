@@ -1,4 +1,4 @@
-import { WsAdapter } from "@nestjs/platform-ws";
+import { IoAdapter } from "@nestjs/platform-socket.io";
 import { NestFactory } from "@nestjs/core";
 import helmet from "helmet";
 import "reflect-metadata";
@@ -15,7 +15,7 @@ async function bootstrap() {
     methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"]
   });
 
-  app.useWebSocketAdapter(new WsAdapter(app));
+  app.useWebSocketAdapter(new IoAdapter(app));
   await app.listen(process.env.PORT || 7000);
 }
 
