@@ -8,7 +8,7 @@ export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
   @MessagePattern({ cmd: "search-message" }, Transport.REDIS)
-  async sendMessage(@Payload() keyword: string): Promise<MessageDocument[] | RpcException> {
-    return this.messagesService.searchMessages(keyword);
+  async sendMessage(@Payload() { roomId, keyword }: { roomId: string; keyword: string }): Promise<MessageDocument[] | RpcException> {
+    return this.messagesService.searchMessages(roomId, keyword);
   }
 }
