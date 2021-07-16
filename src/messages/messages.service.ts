@@ -3,14 +3,18 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Observable } from "rxjs";
 import { Model } from "mongoose";
-import { InternalException } from "../exceptions/Internal.exception";
-import { MessageDocument } from "./message.schema";
-import { MessageDto } from "./message.dto";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
+import { InternalException } from "../exceptions/Internal.exception";
+import { MessageDocument } from "./schemas/message.schema";
+import { UserDocument, UserSchema } from "./schemas/user.schema";
+import { MessageDto } from "./message.dto";
 
 @Injectable()
 export class MessagesService {
-  constructor(@InjectModel("Message") private readonly messageModel: Model<MessageDocument>) {
+  constructor(
+    @InjectModel("Message") private readonly messageModel: Model<MessageDocument>,
+    @InjectModel("User") private readonly userModel: Model<UserDocument>
+  ) {
     this.client = ClientProxyFactory.create({
       transport: Transport.REDIS,
       options: {
@@ -44,16 +48,16 @@ export class MessagesService {
       //
       // }
       const message = await this.messageModel.findOne({ id: messageDto.id });
-      
-      if (message.userId !== messageDto.userId){
-        return HttpStatus.FORBIDDEN;
-      }
+
+      // if (message.user !== messageDto.userId) {
+      //   return HttpStatus.FORBIDDEN;
+      // }
 
       const updatedMessage = {
         _id: message._id,
         id: message.id,
         roomId: message.roomId,
-        userId: message.userId,
+        user: message.user,
         text: messageDto.text ? messageDto.text : message.text,
         attachment: messageDto.attachment ? messageDto.attachment : message.attachment,
         timestamp: message.timestamp
@@ -69,24 +73,23 @@ export class MessagesService {
       });
     }
   }
-  
+
   async searchMessages(roomId: string, keyword: string): Promise<MessageDocument[] | RpcException> {
     try {
       const regex = new RegExp(keyword, "i");
-      
+
       return this.messageModel.find({ roomId, text: regex });
     } catch (e) {
       console.log(e.stack);
       return new RpcException(e);
     }
   }
-  
+
   async deleteMessage(rights, messageId, roomId, userId): Promise<HttpStatus | Observable<any>> {
     try {
-      if (rights.includes("DELETE_MESSAGES")){
-      
+      if (rights.includes("DELETE_MESSAGES")) {
       }
-      
+
       const { deletedCount } = await this.messageModel.deleteOne({ id: messageId });
 
       if (deletedCount !== 0) {
@@ -103,10 +106,20 @@ export class MessagesService {
       });
     }
   }
-  
+
   async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
     try {
-      return this.messageModel.find({ roomId: roomId }).sort({ id: -1 }).skip(start).limit(end);
+      const userIds = [];
+      const messages = await this.messageModel
+        .find({ roomId })
+        .sort({ id: -1 })
+        .skip(start)
+        .limit(end)
+        .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
+
+      console.log(messages);
+
+      return messages;
     } catch (e) {
       console.log(e.stack);
       throw new InternalException({
@@ -116,7 +129,7 @@ export class MessagesService {
       });
     }
   }
-  
+
   private async _addMessageReferenceToRoom(rights: string[], messageId: string, roomId: string): Promise<Observable<any>> {
     try {
       return this.client.send(

@@ -15,7 +15,16 @@ import { MessageModule } from "./messages/messages.module";
       ignoreUserAgents: [new RegExp("googlebot", "gi"), new RegExp("bingbot", "gi")]
     }),
     MongooseModule.forRoot(
-      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_DATABASE_NAME}?retryWrites=true&w=majority`
+      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_USER_DATABASE_NAME}?retryWrites=true&w=majority`,
+      {
+        connectionName: "users"
+      }
+    ),
+    MongooseModule.forRoot(
+      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_MESSAGES_DATABASE_NAME}?retryWrites=true&w=majority`,
+      {
+        connectionName: "messages"
+      }
     ),
     MessageModule,
     ValidationModule

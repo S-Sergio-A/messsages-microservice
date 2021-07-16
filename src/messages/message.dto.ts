@@ -1,4 +1,5 @@
 import { IsDefined, IsNotEmpty, IsString } from "class-validator";
+import { Types } from "mongoose";
 
 export class MessageDto {
   @IsString()
@@ -25,10 +26,5 @@ export class MessageDto {
   @IsDefined()
   @IsNotEmpty()
   @IsString()
-  userId: string;
-  
-  @IsDefined()
-  @IsNotEmpty()
-  @IsString()
-  username: string;
+  userId: Types.ObjectId;
 }

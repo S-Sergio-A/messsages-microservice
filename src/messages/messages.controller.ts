@@ -1,6 +1,6 @@
 import { MessagePattern, Payload, RpcException, Transport } from "@nestjs/microservices";
 import { Controller } from "@nestjs/common";
-import { MessageDocument } from "./message.schema";
+import { MessageDocument } from "./schemas/message.schema";
 import { MessagesService } from "./messages.service";
 
 @Controller("messages")

@@ -19,10 +19,6 @@ export class ValidationService {
       if (await this._isEmpty(data.roomId)) {
         errors.roomId = GlobalErrorCodes.EMPTY_ERROR.value;
       }
-  
-      if (await this._isEmpty(data.username)) {
-        errors.username = GlobalErrorCodes.EMPTY_ERROR.value;
-      }
       
       if (await this._isEmpty(data.timestamp)) {
         const date = Date.now();
