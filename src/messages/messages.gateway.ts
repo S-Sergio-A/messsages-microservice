@@ -36,8 +36,8 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
       const usersConnectedToThisRoom = this.connectedUsers.filter((item) => item.roomId === queryParams.roomId);
 
-      socket.send("users", usersConnectedToThisRoom);
-      // this.server.emit("users", usersConnectedToThisRoom);
+      // socket.send("users", usersConnectedToThisRoom);
+      this.server.emit("users", usersConnectedToThisRoom);
     } catch (e) {
       console.log(e.stack);
       socket.send(
@@ -64,7 +64,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
         this.connectedUsers = [...this.connectedUsers.slice(0, userPosition), ...this.connectedUsers.slice(userPosition + 1)];
       }
 
-      socket.send("users", this.connectedUsers);
+      // socket.send("users", this.connectedUsers);
       this.server.emit("users", this.connectedUsers);
     } catch (e) {
       console.log(e.stack);
@@ -83,7 +83,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage("new-message")
   async onMessageCreation(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
-      console.log(data);
+      console.log(data, "gateway/n/n/n");
       // let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
       //
       // if (typeof rights === "string") {
@@ -92,7 +92,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       
       return await this.messagesService.addMessage(data, ["SEND_MESSAGES"]);
     } catch (e) {
-      console.log(e.stack);
+      console.log(e, e.stack);
       socket.send(
         "error",
         new WsException({
