@@ -26,7 +26,6 @@ export class MessagesService {
   async addMessage(messageDto: MessageDto, rights: string[]): Promise<Observable<any>> {
     try {
       const createdMessage = new this.messageModel(messageDto);
-      console.log(createdMessage, "service");
       await createdMessage.save();
       return await this._addMessageReferenceToRoom(rights, messageDto.id, messageDto.roomId);
     } catch (e) {

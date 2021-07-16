@@ -83,13 +83,12 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage("new-message")
   async onMessageCreation(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
-      console.log(data, "gateway/n/n/n");
       // let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
       //
       // if (typeof rights === "string") {
       //   rights = [...rights];
       // }
-      
+
       return await this.messagesService.addMessage(data, ["SEND_MESSAGES"]);
     } catch (e) {
       console.log(e, e.stack);
@@ -111,11 +110,11 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   async onMessageUpdate(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
       let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
-  
+
       if (typeof rights === "string") {
         rights = [...rights];
       }
-  
+
       return await this.messagesService.updateMessage(data, rights);
     } catch (e) {
       console.log(e.stack);
@@ -168,7 +167,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
       const messages = await this.messagesService.getRoomMessagesLimited(roomId, requestData.start, requestData.end);
 
-      socket.send("more-messages", messages);
+      this.server.emit("more-messages", messages);
     } catch (e) {
       console.log(e.stack);
       socket.send(
@@ -191,7 +190,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
       const messages = await this.messagesService.getRoomMessagesLimited(roomId, 0, 50);
 
-      socket.send("last-messages", messages);
+      this.server.emit("last-messages", messages);
     } catch (e) {
       console.log(e.stack);
       socket.send(

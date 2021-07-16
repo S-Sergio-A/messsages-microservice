@@ -14,13 +14,16 @@ class Message {
   @Prop({ required: true, index: false })
   userId: string;
   
-  @Prop({ required: true, index: true })
+  @Prop({ required: true, index: false })
+  username: string;
+  
+  @Prop({ required: true, index: false })
   timestamp: string;
   
-  @Prop({ required: true, index: true })
+  @Prop({ required: true, index: false })
   text: string;
   
-  @Prop({ required: true, index: true })
+  @Prop({ required: false, index: false })
   attachment: string;
 }
 

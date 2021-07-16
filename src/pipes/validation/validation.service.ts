@@ -8,7 +8,7 @@ import sanitizeHtml from "sanitize-html";
 
 @Injectable()
 export class ValidationService {
-  async validateMessage(data: any) {
+  async validateMessage(data: MessageDto) {
     let errors: Partial<Message & InternalFailure> = {};
     
     try {
@@ -19,7 +19,11 @@ export class ValidationService {
       if (await this._isEmpty(data.roomId)) {
         errors.roomId = GlobalErrorCodes.EMPTY_ERROR.value;
       }
-
+  
+      if (await this._isEmpty(data.username)) {
+        errors.username = GlobalErrorCodes.EMPTY_ERROR.value;
+      }
+      
       if (await this._isEmpty(data.timestamp)) {
         const date = Date.now();
         const localTime = new Date(date).toLocaleTimeString("ru-RU").substring(0, 5);

@@ -26,4 +26,9 @@ export class MessageDto {
   @IsNotEmpty()
   @IsString()
   userId: string;
+  
+  @IsDefined()
+  @IsNotEmpty()
+  @IsString()
+  username: string;
 }

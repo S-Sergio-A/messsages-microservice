@@ -5,18 +5,19 @@ import { ValidationService } from "./validation.service";
 @Injectable()
 export class MessageValidationPipe implements PipeTransform {
   async transform(value, metadata: ArgumentMetadata) {
-    console.log(value);
-
     if (!value) {
       throw new BadRequestException("No data submitted");
     }
 
-    const { errors, isValid } = await ValidationService.prototype.validateMessage(value);
+    if (value.hasOwnProperty("text")) {
+      const { errors, isValid } = await ValidationService.prototype.validateMessage(value);
 
-    if (isValid) {
-      return value;
-    } else {
-      throw new ValidationException(errors);
+      if (isValid) {
+        return value;
+      } else {
+        console.log(errors);
+        throw new ValidationException(errors);
+      }
     }
   }
 }
