@@ -13,7 +13,7 @@ class Message {
   roomId: string;
 
   @Prop({ required: true, index: false, ref: "User", type: [Types.ObjectId] })
-  user: UserDocument;
+  user: Types.ObjectId;
 
   @Prop({ required: true, index: false })
   timestamp: string;
