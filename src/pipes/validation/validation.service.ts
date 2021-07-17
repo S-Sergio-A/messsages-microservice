@@ -41,8 +41,8 @@ export class ValidationService {
         // });
       }
 
-      if (await this._isEmpty(data.userId)) {
-        errors.userId = GlobalErrorCodes.NO_USER_ID.value;
+      if (await this._isEmpty(data.user)) {
+        errors.user = GlobalErrorCodes.NO_USER_ID.value;
       }
     } catch (err) {
       errors.internalFailure = err;
