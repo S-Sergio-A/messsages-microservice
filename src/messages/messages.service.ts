@@ -109,7 +109,7 @@ export class MessagesService {
 
   async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
     try {
-      console.log(this.messageModel, this.userModel);
+      console.log(JSON.stringify(this.messageModel), JSON.stringify(this.userModel));
       
       const messagess = await this.messageModel
         .find({ roomId });
