@@ -10,7 +10,7 @@ import sanitizeHtml from "sanitize-html";
 export class ValidationService {
   async validateMessage(data: MessageDto) {
     let errors: Partial<Message & InternalFailure> = {};
-    
+
     try {
       if (await this._isEmpty(data.id)) {
         data.id = v4();
@@ -19,7 +19,7 @@ export class ValidationService {
       if (await this._isEmpty(data.roomId)) {
         errors.roomId = GlobalErrorCodes.EMPTY_ERROR.value;
       }
-      
+
       if (await this._isEmpty(data.timestamp)) {
         const date = Date.now();
         const localTime = new Date(date).toLocaleTimeString("ru-RU").substring(0, 5);

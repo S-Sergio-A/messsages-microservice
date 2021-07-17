@@ -6,7 +6,7 @@ import { Model } from "mongoose";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
 import { InternalException } from "../exceptions/Internal.exception";
 import { MessageDocument } from "./schemas/message.schema";
-import { UserDocument, UserSchema } from "./schemas/user.schema";
+import { UserDocument } from "./schemas/user.schema";
 import { MessageDto } from "./message.dto";
 
 @Injectable()
@@ -109,7 +109,6 @@ export class MessagesService {
 
   async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
     try {
-      const userIds = [];
       const messages = await this.messageModel
         .find({ roomId })
         .sort({ id: -1 })
