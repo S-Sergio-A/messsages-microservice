@@ -8,6 +8,7 @@ import { InternalException } from "../exceptions/Internal.exception";
 import { MessageDocument } from "./schemas/message.schema";
 import { UserDocument } from "./schemas/user.schema";
 import { MessageDto } from "./message.dto";
+import { timestamp } from "rxjs/operators";
 
 @Injectable()
 export class MessagesService {
@@ -109,9 +110,11 @@ export class MessagesService {
 
   async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
     try {
+      console.log(roomId);
+      
       const messages = await this.messageModel
         .find({ roomId })
-        .sort({ id: -1 })
+        .sort({ timestamp: -1 })
         .skip(start)
         .limit(end)
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
