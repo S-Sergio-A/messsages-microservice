@@ -182,7 +182,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   @SubscribeMessage("load-last-messages")
-  async onRoomJoin(@MessageBody() data: string, @ConnectedSocket() socket: Socket): Promise<any> {
+  async onRoomJoin(@ConnectedSocket() socket: Socket): Promise<any> {
     try {
       const queryParams = socket.handshake.query;
 

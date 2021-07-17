@@ -17,13 +17,13 @@ import { MessageModule } from "./messages/messages.module";
     MongooseModule.forRoot(
       `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_USER_DATABASE_NAME}?retryWrites=true&w=majority`,
       {
-        connectionName: "users"
+        connectionName: "user"
       }
     ),
     MongooseModule.forRoot(
       `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_MESSAGES_DATABASE_NAME}?retryWrites=true&w=majority`,
       {
-        connectionName: "messages"
+        connectionName: "message"
       }
     ),
     MessageModule,

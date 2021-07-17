@@ -8,8 +8,8 @@ import { UserSchema } from "./schemas/user.schema";
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: "Message", schema: MessageSchema }], "messages"),
-    MongooseModule.forFeature([{ name: "User", schema: UserSchema }], "users")
+    MongooseModule.forFeature([{ name: "Message", schema: MessageSchema }], "message"),
+    MongooseModule.forFeature([{ name: "User", schema: UserSchema }], "user")
   ],
   controllers: [MessagesController],
   providers: [MessagesService, MessagesGateway],

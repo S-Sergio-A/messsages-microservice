@@ -8,7 +8,6 @@ import { InternalException } from "../exceptions/Internal.exception";
 import { MessageDocument } from "./schemas/message.schema";
 import { UserDocument } from "./schemas/user.schema";
 import { MessageDto } from "./message.dto";
-import { timestamp } from "rxjs/operators";
 
 @Injectable()
 export class MessagesService {

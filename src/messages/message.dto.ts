@@ -26,5 +26,5 @@ export class MessageDto {
   @IsDefined()
   @IsNotEmpty()
   @IsString()
-  userId: Types.ObjectId;
+  user: Types.ObjectId;
 }
