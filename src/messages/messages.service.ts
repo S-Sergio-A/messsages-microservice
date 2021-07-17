@@ -109,24 +109,12 @@ export class MessagesService {
 
   async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
     try {
-      console.log(
-        JSON.stringify(this.messageModel),
-        JSON.stringify(this.userModel),
-        `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_MESSAGES_DATABASE_NAME}?retryWrites=true&w=majority`
-      );
-
-      const messagess = await this.messageModel.find({ roomId });
-
-      const messages = await this.messageModel
+      return await this.messageModel
         .find({ roomId })
         .sort({ timestamp: -1 })
         .skip(start)
         .limit(end)
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
-
-      console.log(messagess, messages);
-
-      return messages;
     } catch (e) {
       console.log(e.stack);
       throw new InternalException({
