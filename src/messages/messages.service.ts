@@ -110,7 +110,8 @@ export class MessagesService {
 
   async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
     try {
-      console.log(roomId);
+      const messagess = await this.messageModel
+        .find({ roomId });
       
       const messages = await this.messageModel
         .find({ roomId })
@@ -119,7 +120,7 @@ export class MessagesService {
         .limit(end)
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
 
-      console.log(messages);
+      console.log(messagess, messages);
 
       return messages;
     } catch (e) {

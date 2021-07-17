@@ -187,6 +187,8 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       const queryParams = socket.handshake.query;
 
       const roomId = queryParams.roomId.toString();
+  
+      console.log(roomId);
 
       const messages = await this.messagesService.getRoomMessagesLimited(roomId, 0, 50);
 
