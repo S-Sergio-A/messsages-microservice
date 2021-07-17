@@ -35,7 +35,9 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       this.connectedUsers.push({ userId, roomId });
 
       const usersConnectedToThisRoom = this.connectedUsers.filter((item) => item.roomId === queryParams.roomId);
-
+  
+      socket.join(roomId);
+      
       // socket.send("users", usersConnectedToThisRoom);
       this.server.emit("users", usersConnectedToThisRoom);
     } catch (e) {
@@ -88,8 +90,10 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       // if (typeof rights === "string") {
       //   rights = [...rights];
       // }
+      const roomId = socket.handshake.query.roomId.toString();
 
-      return await this.messagesService.addMessage(data, ["SEND_MESSAGES"]);
+      await this.messagesService.addMessage(data, ["SEND_MESSAGES"]);
+      this.server.to(roomId).emit("new-message", data);
     } catch (e) {
       console.log(e, e.stack);
       socket.send(
