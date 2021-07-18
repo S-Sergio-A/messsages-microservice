@@ -90,10 +90,9 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       // if (typeof rights === "string") {
       //   rights = [...rights];
       // }
-      const roomId = socket.handshake.query.roomId.toString();
-
+      
       await this.messagesService.addMessage(data, ["SEND_MESSAGES"]);
-      this.server.to(roomId).emit("new-message", data);
+      this.server.to(data.roomId).emit("new-message", data);
     } catch (e) {
       console.log(e, e.stack);
       socket.send(

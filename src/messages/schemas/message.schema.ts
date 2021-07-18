@@ -12,7 +12,7 @@ class Message {
   @Prop({ required: true, index: false, ref: "Room" })
   roomId: string;
 
-  @Prop({ required: true, index: false, ref: "User", type: [Types.ObjectId] })
+  @Prop({ required: true, index: false, ref: "User", type: Types.ObjectId })
   user: UserDocument | Types.ObjectId;
 
   @Prop({ required: true, index: false })
