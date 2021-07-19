@@ -35,10 +35,9 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       this.connectedUsers.push({ userId, roomId });
 
       const usersConnectedToThisRoom = this.connectedUsers.filter((item) => item.roomId === queryParams.roomId);
-  
+
       socket.join(roomId);
-      
-      // socket.send("users", usersConnectedToThisRoom);
+
       this.server.emit("users", usersConnectedToThisRoom);
     } catch (e) {
       console.log(e.stack);
@@ -66,7 +65,6 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
         this.connectedUsers = [...this.connectedUsers.slice(0, userPosition), ...this.connectedUsers.slice(userPosition + 1)];
       }
 
-      // socket.send("users", this.connectedUsers);
       this.server.emit("users", this.connectedUsers);
     } catch (e) {
       console.log(e.stack);
@@ -85,14 +83,8 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage("new-message")
   async onMessageCreation(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
-      // let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
-      //
-      // if (typeof rights === "string") {
-      //   rights = [...rights];
-      // }
-      
-      await this.messagesService.addMessage(data, ["SEND_MESSAGES"]);
-      this.server.to(data.roomId).emit("new-message", data);
+      const newMessage = await this.messagesService.addMessage(data, data.rights);
+      this.server.to(data.roomId).emit("new-message", newMessage);
     } catch (e) {
       console.log(e, e.stack);
       socket.send(
@@ -105,20 +97,12 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       );
     }
   }
-
-  /* Not working
-   */
+  
   @UsePipes(new MessageValidationPipe())
   @SubscribeMessage("update-message")
   async onMessageUpdate(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
-      let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
-
-      if (typeof rights === "string") {
-        rights = [...rights];
-      }
-
-      return await this.messagesService.updateMessage(data, rights);
+      return await this.messagesService.updateMessage(data, data.rights);
     } catch (e) {
       console.log(e.stack);
       socket.send(
@@ -131,21 +115,11 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       );
     }
   }
-
-  /* Not working
-   */
+  
   @SubscribeMessage("delete-message")
-  async onDelete(@MessageBody() data: string, @ConnectedSocket() socket: Socket) {
+  async onDelete(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
     try {
-      const queryParams = socket.handshake.query;
-
-      const userId = queryParams.userId.toString();
-      const roomId = queryParams.roomId.toString();
-      let rights = JSON.parse(<string>socket.handshake.headers["rights"]);
-
-      const messageData: { id: string } = JSON.parse(data);
-
-      return await this.messagesService.deleteMessage(rights, messageData.id, roomId, userId);
+      return await this.messagesService.deleteMessage(data.rights, data._id, data.roomId, data.user);
     } catch (e) {
       console.log(e.stack);
       socket.send(
@@ -190,9 +164,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       const queryParams = socket.handshake.query;
 
       const roomId = queryParams.roomId.toString();
-  
-      console.log(roomId);
-
+      
       const messages = await this.messagesService.getRoomMessagesLimited(roomId, 0, 50);
 
       this.server.emit("last-messages", messages);
