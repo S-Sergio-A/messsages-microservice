@@ -1,11 +1,12 @@
 import { ClientProxy, ClientProxyFactory, RpcException, Transport } from "@nestjs/microservices";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
+import { Model, Types } from "mongoose";
 import { Observable } from "rxjs";
-import { Model } from "mongoose";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
 import { InternalException } from "../exceptions/Internal.exception";
 import { MessageDocument } from "./schemas/message.schema";
+import { RightsDocument } from "./schemas/rights.schema";
 import { UserDocument } from "./schemas/user.schema";
 import { MessageDto } from "./message.dto";
 
@@ -13,7 +14,8 @@ import { MessageDto } from "./message.dto";
 export class MessagesService {
   constructor(
     @InjectModel("Message") private readonly messageModel: Model<MessageDocument>,
-    @InjectModel("User") private readonly userModel: Model<UserDocument>
+    @InjectModel("User") private readonly userModel: Model<UserDocument>,
+    @InjectModel("Rights") private readonly rightsModel: Model<RightsDocument>
   ) {
     this.client = ClientProxyFactory.create({
       transport: Transport.REDIS,
@@ -27,11 +29,21 @@ export class MessagesService {
 
   client: ClientProxy;
 
-  async addMessage(messageDto: MessageDto, rights: string[]): Promise<Observable<any>> {
+  async addMessage(messageDto: MessageDto, rights: string[]): Promise<MessageDocument> {
     try {
       const createdMessage = new this.messageModel(messageDto);
       await createdMessage.save();
-      return await this._addMessageReferenceToRoom(rights, messageDto.id, messageDto.roomId);
+      await this.client.send(
+        { cmd: "add-message-reference" },
+        {
+          rights,
+          roomId: messageDto.roomId,
+          messageId: messageDto._id
+        }
+      );
+      return await this.messageModel
+        .findOne({ _id: messageDto._id })
+        .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
     } catch (e) {
       console.log(e, e.stack);
       throw new InternalException({
@@ -44,26 +56,25 @@ export class MessagesService {
 
   async updateMessage(messageDto: MessageDto, rights: string[]): Promise<HttpStatus | Error> {
     try {
-      // if (!rights.includes("UPDATE_MESSAGE")){
-      //
-      // }
-      const message = await this.messageModel.findOne({ id: messageDto.id });
-
-      // if (message.user !== messageDto.userId) {
-      //   return HttpStatus.FORBIDDEN;
-      // }
-
-      const updatedMessage = {
-        _id: message._id,
-        id: message.id,
-        roomId: message.roomId,
-        user: message.user,
-        text: messageDto.text ? messageDto.text : message.text,
-        attachment: messageDto.attachment ? messageDto.attachment : message.attachment,
-        timestamp: message.timestamp
-      };
-      await this.messageModel.updateOne({ id: messageDto.id }, updatedMessage);
-      return HttpStatus.CREATED;
+      if (rights.includes("UPDATE_MESSAGE") && (await this._verifyRights(rights, messageDto.user))) {
+  
+        const message = await this.messageModel.findOne({ _id: messageDto._id });
+  
+        if (message.user !== messageDto.user) {
+          return HttpStatus.FORBIDDEN;
+        }
+  
+        const updatedMessage = {
+          _id: message._id,
+          roomId: message.roomId,
+          user: message.user,
+          text: messageDto.text ? messageDto.text : message.text,
+          attachment: messageDto.attachment ? messageDto.attachment : message.attachment,
+          timestamp: message.timestamp
+        };
+        await this.messageModel.updateOne({ _id: messageDto._id }, updatedMessage);
+        return HttpStatus.CREATED;
+      }
     } catch (e) {
       console.log(e.stack);
       throw new InternalException({
@@ -87,16 +98,22 @@ export class MessagesService {
 
   async deleteMessage(rights, messageId, roomId, userId): Promise<HttpStatus | Observable<any>> {
     try {
-      if (rights.includes("DELETE_MESSAGES")) {
+      if (rights.includes("DELETE_MESSAGES") && (await this._verifyRights(rights, userId))) {
+        const { deletedCount } = await this.messageModel.deleteOne({ _id: messageId, roomId, user: userId });
+
+        if (deletedCount !== 0) {
+          return await this.client.send(
+            { cmd: "delete-message-reference" },
+            {
+              rights,
+              roomId,
+              messageId
+            }
+          );
+        }
+      } else {
+        return HttpStatus.BAD_REQUEST;
       }
-
-      const { deletedCount } = await this.messageModel.deleteOne({ id: messageId });
-
-      if (deletedCount !== 0) {
-        return await this._deleteMessageReferenceFromRoom(rights, messageId, roomId);
-      }
-
-      return HttpStatus.BAD_REQUEST;
     } catch (e) {
       console.log(e.stack);
       throw new InternalException({
@@ -125,39 +142,12 @@ export class MessagesService {
     }
   }
 
-  private async _addMessageReferenceToRoom(rights: string[], messageId: string, roomId: string): Promise<Observable<any>> {
+  private async _verifyRights(rights: string[], user: Types.ObjectId): Promise<boolean | Observable<any> | RpcException> {
     try {
-      return this.client.send(
-        { cmd: "add-message-reference" },
-        {
-          rights,
-          roomId,
-          messageId
-        }
-      );
+      return await this.rightsModel.exists({ user, rights });
     } catch (e) {
       console.log(e.stack);
-      throw new InternalException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
-      });
-    }
-  }
-
-  private async _deleteMessageReferenceFromRoom(rights: string[], messageId: string, roomId: string): Promise<Observable<any>> {
-    try {
-      return this.client.send(
-        { cmd: "delete-message-reference" },
-        {
-          rights,
-          roomId,
-          messageId
-        }
-      );
-    } catch (e) {
-      console.log(e.stack);
-      throw new InternalException({
+      return new RpcException({
         key: "INTERNAL_ERROR",
         code: GlobalErrorCodes.INTERNAL_ERROR.code,
         message: GlobalErrorCodes.INTERNAL_ERROR.value
