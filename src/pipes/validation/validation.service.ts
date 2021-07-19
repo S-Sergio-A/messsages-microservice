@@ -12,10 +12,6 @@ export class ValidationService {
     let errors: Partial<Message & InternalFailure> = {};
 
     try {
-      if (await this._isEmpty(data.id)) {
-        data.id = v4();
-      }
-
       if (await this._isEmpty(data.roomId)) {
         errors.roomId = GlobalErrorCodes.EMPTY_ERROR.value;
       }

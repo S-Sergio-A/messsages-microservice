@@ -1,9 +1,9 @@
-import { IsDefined, IsNotEmpty, IsString } from "class-validator";
+import { IsArray, IsDefined, IsNotEmpty, IsString } from "class-validator";
 import { Types } from "mongoose";
 
 export class MessageDto {
   @IsString()
-  id: string;
+  _id: Types.ObjectId;
 
   @IsDefined()
   @IsNotEmpty()
@@ -27,4 +27,9 @@ export class MessageDto {
   @IsNotEmpty()
   @IsString()
   user: Types.ObjectId;
+  
+  @IsDefined()
+  @IsNotEmpty()
+  @IsArray()
+  rights: string[];
 }

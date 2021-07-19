@@ -26,6 +26,12 @@ import { MessageModule } from "./messages/messages.module";
         connectionName: "message"
       }
     ),
+    MongooseModule.forRoot(
+      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_ROOMS_DATABASE_NAME}?retryWrites=true&w=majority`,
+      {
+        connectionName: "room"
+      }
+    ),
     MessageModule,
     ValidationModule
   ],
