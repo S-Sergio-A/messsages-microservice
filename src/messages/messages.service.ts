@@ -38,11 +38,11 @@ export class MessagesService {
         {
           rights,
           roomId: messageDto.roomId,
-          messageId: messageDto._id
+          messageId: createdMessage._id
         }
       );
       return await this.messageModel
-        .findOne({ _id: messageDto._id })
+        .findOne({ _id: createdMessage._id })
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
     } catch (e) {
       console.log(e, e.stack);
@@ -65,7 +65,7 @@ export class MessagesService {
         }
   
         const updatedMessage = {
-          _id: message._id,
+          _id: messageDto._id,
           roomId: message.roomId,
           user: message.user,
           text: messageDto.text ? messageDto.text : message.text,
