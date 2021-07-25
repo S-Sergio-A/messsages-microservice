@@ -1,14 +1,12 @@
 import { IsArray, IsDefined, IsNotEmpty, IsString } from "class-validator";
 import { Types } from "mongoose";
+import { UserDocument } from "../schemas/user.schema";
 
-export class MessageDto {
-  @IsString()
-  _id: Types.ObjectId;
-
+export class NewMessageDto {
   @IsDefined()
   @IsNotEmpty()
   @IsString()
-  roomId: string;
+  roomId: string | Types.ObjectId;
 
   @IsDefined()
   @IsNotEmpty()
@@ -26,8 +24,8 @@ export class MessageDto {
   @IsDefined()
   @IsNotEmpty()
   @IsString()
-  user: Types.ObjectId;
-  
+  user: string | Types.ObjectId;
+
   @IsDefined()
   @IsNotEmpty()
   @IsArray()
