@@ -13,7 +13,8 @@ import { Server, Socket } from "socket.io";
 import { MessageValidationPipe } from "../pipes/validation/message.validation.pipe";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
 import { MessagesService } from "./messages.service";
-import { MessageDto } from "./message.dto";
+import { ExistingMessageDto } from "./dto/existing-message.dto";
+import { NewMessageDto } from "./dto/new-message.dto";
 
 @Injectable()
 @WebSocketGateway({ path: "/socket.io/" })
@@ -81,10 +82,10 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   @UsePipes(new MessageValidationPipe())
   @SubscribeMessage("new-message")
-  async onMessageCreation(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
+  async createMessage(@MessageBody() data: NewMessageDto, @ConnectedSocket() socket: Socket) {
     try {
       const newMessage = await this.messagesService.addMessage(data, data.rights);
-      this.server.to(data.roomId).emit("new-message", newMessage);
+      this.server.to(data.roomId.toString()).emit("new-message", newMessage);
     } catch (e) {
       console.log(e, e.stack);
       socket.send(
@@ -97,12 +98,12 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       );
     }
   }
-  
+
   @UsePipes(new MessageValidationPipe())
   @SubscribeMessage("update-message")
-  async onMessageUpdate(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
+  async updateMessage(@MessageBody() data: ExistingMessageDto, @ConnectedSocket() socket: Socket) {
     try {
-      return await this.messagesService.updateMessage(data, data.rights);
+      this.server.to(data.roomId.toString()).emit("updated-message", await this.messagesService.updateMessage(data));
     } catch (e) {
       console.log(e.stack);
       socket.send(
@@ -115,13 +116,32 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       );
     }
   }
-  
+
   @SubscribeMessage("delete-message")
-  async onDelete(@MessageBody() data: MessageDto, @ConnectedSocket() socket: Socket) {
+  async deleteMessage(@MessageBody() data: ExistingMessageDto, @ConnectedSocket() socket: Socket) {
     try {
-      return await this.messagesService.deleteMessage(data.rights, data._id, data.roomId, data.user);
+      return await this.messagesService.deleteMessage(data.rights, data._id.toString(), data.roomId.toString(), data.user.toString());
     } catch (e) {
       console.log(e.stack);
+      socket.send(
+        "error",
+        new WsException({
+          key: "INTERNAL_ERROR",
+          code: GlobalErrorCodes.INTERNAL_ERROR.code,
+          message: GlobalErrorCodes.INTERNAL_ERROR.value
+        })
+      );
+    }
+  }
+
+  @UsePipes(new MessageValidationPipe())
+  @SubscribeMessage("search-messages")
+  async searchMessages(@MessageBody() data: { roomId: string; keyword: string }, @ConnectedSocket() socket: Socket) {
+    try {
+      const searchedMessages = await this.messagesService.searchMessages(data.roomId, data.keyword);
+      this.server.to(data.roomId.toString()).emit("searched-messages", searchedMessages);
+    } catch (e) {
+      console.log(e, e.stack);
       socket.send(
         "error",
         new WsException({
@@ -164,7 +184,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       const queryParams = socket.handshake.query;
 
       const roomId = queryParams.roomId.toString();
-      
+
       const messages = await this.messagesService.getRoomMessagesLimited(roomId, 0, 50);
 
       this.server.emit("last-messages", messages);
