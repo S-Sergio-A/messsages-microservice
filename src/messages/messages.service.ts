@@ -8,7 +8,8 @@ import { InternalException } from "../exceptions/Internal.exception";
 import { MessageDocument } from "./schemas/message.schema";
 import { RightsDocument } from "./schemas/rights.schema";
 import { UserDocument } from "./schemas/user.schema";
-import { MessageDto } from "./message.dto";
+import { ExistingMessageDto } from "./dto/existing-message.dto";
+import { NewMessageDto } from "./dto/new-message.dto";
 
 @Injectable()
 export class MessagesService {
@@ -29,8 +30,11 @@ export class MessagesService {
 
   client: ClientProxy;
 
-  async addMessage(messageDto: MessageDto, rights: string[]): Promise<MessageDocument> {
+  async addMessage(messageDto: NewMessageDto, rights: string[]): Promise<MessageDocument> {
     try {
+      messageDto.user = new Types.ObjectId(messageDto.user);
+      messageDto.roomId = new Types.ObjectId(messageDto.roomId);
+
       const createdMessage = new this.messageModel(messageDto);
       await createdMessage.save();
       await this.client.send(
@@ -54,27 +58,25 @@ export class MessagesService {
     }
   }
 
-  async updateMessage(messageDto: MessageDto, rights: string[]): Promise<HttpStatus | Error> {
+  async updateMessage(messageDto: ExistingMessageDto): Promise<HttpStatus | Error> {
     try {
-      if (rights.includes("UPDATE_MESSAGE") && (await this._verifyRights(rights, messageDto.user))) {
-  
-        const message = await this.messageModel.findOne({ _id: messageDto._id });
-  
-        if (message.user !== messageDto.user) {
-          return HttpStatus.FORBIDDEN;
-        }
-  
-        const updatedMessage = {
-          _id: messageDto._id,
-          roomId: message.roomId,
-          user: message.user,
-          text: messageDto.text ? messageDto.text : message.text,
-          attachment: messageDto.attachment ? messageDto.attachment : message.attachment,
-          timestamp: message.timestamp
-        };
-        await this.messageModel.updateOne({ _id: messageDto._id }, updatedMessage);
-        return HttpStatus.CREATED;
+      const message = await this.messageModel.findOne({ _id: new Types.ObjectId(messageDto._id) });
+
+      if (message.user.toString() !== messageDto.user._id) {
+        return HttpStatus.FORBIDDEN;
       }
+
+      const updatedMessage = {
+        _id: message._id,
+        roomId: message.roomId,
+        user: message.user,
+        text: messageDto.text !== message.text ? messageDto.text : message.text,
+        attachment: messageDto.attachment !== message.attachment ? messageDto.attachment : message.attachment,
+        timestamp: message.timestamp
+      };
+      
+      await this.messageModel.updateOne({ _id: message._id }, updatedMessage);
+      return HttpStatus.CREATED;
     } catch (e) {
       console.log(e.stack);
       throw new InternalException({
@@ -89,28 +91,40 @@ export class MessagesService {
     try {
       const regex = new RegExp(keyword, "i");
 
-      return this.messageModel.find({ roomId, text: regex });
+      return this.messageModel.find({ roomId: new Types.ObjectId(roomId), text: regex });
     } catch (e) {
       console.log(e.stack);
       return new RpcException(e);
     }
   }
 
-  async deleteMessage(rights, messageId, roomId, userId): Promise<HttpStatus | Observable<any>> {
+  async deleteMessage(rights: string[], messageId: string, roomId: string, userId: string): Promise<HttpStatus | Observable<any>> {
     try {
-      if (rights.includes("DELETE_MESSAGES") && (await this._verifyRights(rights, userId))) {
-        const { deletedCount } = await this.messageModel.deleteOne({ _id: messageId, roomId, user: userId });
+      const canDeleteAll =
+        rights.includes("DELETE_MESSAGES") && (await this._verifyRights(rights, new Types.ObjectId(userId), new Types.ObjectId(roomId)));
 
-        if (deletedCount !== 0) {
-          return await this.client.send(
-            { cmd: "delete-message-reference" },
-            {
-              rights,
-              roomId,
-              messageId
-            }
-          );
-        }
+      const query = {
+        _id: new Types.ObjectId(messageId),
+        roomId: new Types.ObjectId(roomId),
+        user: new Types.ObjectId(userId)
+      };
+
+      if (canDeleteAll) {
+        delete query.user;
+      }
+      
+      const { deletedCount } = await this.messageModel.deleteOne(query);
+      
+      if (deletedCount !== 0) {
+        return await this.client.send(
+          { cmd: "delete-message-reference" },
+          {
+            rights,
+            userId,
+            roomId,
+            messageId
+          }
+        );
       } else {
         return HttpStatus.BAD_REQUEST;
       }
@@ -127,7 +141,7 @@ export class MessagesService {
   async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
     try {
       return await this.messageModel
-        .find({ roomId })
+        .find({ roomId: new Types.ObjectId(roomId) })
         .sort({ timestamp: 1 })
         .skip(start)
         .limit(end)
@@ -142,9 +156,13 @@ export class MessagesService {
     }
   }
 
-  private async _verifyRights(rights: string[], user: Types.ObjectId): Promise<boolean | Observable<any> | RpcException> {
+  private async _verifyRights(
+    rights: string[],
+    user: Types.ObjectId,
+    roomId: Types.ObjectId
+  ): Promise<boolean | Observable<any> | RpcException> {
     try {
-      return await this.rightsModel.exists({ user, rights });
+      return await this.rightsModel.exists({ user, roomId, rights });
     } catch (e) {
       console.log(e.stack);
       return new RpcException({
