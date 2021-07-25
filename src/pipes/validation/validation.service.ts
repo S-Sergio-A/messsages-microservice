@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { GlobalErrorCodes } from "../../exceptions/errorCodes/GlobalErrorCodes";
-import { MessageDto } from "../../messages/message.dto";
+import { ExistingMessageDto } from "../../messages/dto/existing-message.dto";
 import { InternalFailure } from "../interfaces/internal-failure.interface";
 import { Message } from "../interfaces/message";
 import { v4 } from "uuid";
@@ -8,7 +8,7 @@ import sanitizeHtml from "sanitize-html";
 
 @Injectable()
 export class ValidationService {
-  async validateMessage(data: MessageDto) {
+  async validateMessage(data: ExistingMessageDto) {
     let errors: Partial<Message & InternalFailure> = {};
 
     try {
