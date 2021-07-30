@@ -1,6 +1,5 @@
 import { IsArray, IsDefined, IsNotEmpty, IsString } from "class-validator";
 import { Types } from "mongoose";
-import { UserDocument } from "../schemas/user.schema";
 
 export class NewMessageDto {
   @IsDefined()

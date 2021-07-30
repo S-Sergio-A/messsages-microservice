@@ -5,11 +5,11 @@ import { Model, Types } from "mongoose";
 import { Observable } from "rxjs";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
 import { InternalException } from "../exceptions/Internal.exception";
+import { ExistingMessageDto } from "./dto/existing-message.dto";
 import { MessageDocument } from "./schemas/message.schema";
 import { RightsDocument } from "./schemas/rights.schema";
-import { UserDocument } from "./schemas/user.schema";
-import { ExistingMessageDto } from "./dto/existing-message.dto";
 import { NewMessageDto } from "./dto/new-message.dto";
+import { UserDocument } from "./schemas/user.schema";
 
 @Injectable()
 export class MessagesService {
@@ -91,7 +91,7 @@ export class MessagesService {
     try {
       const regex = new RegExp(keyword, "i");
 
-      return this.messageModel.find({ roomId: new Types.ObjectId(roomId), text: regex });
+      return await this.messageModel.find({ roomId: new Types.ObjectId(roomId), text: regex });
     } catch (e) {
       console.log(e.stack);
       return new RpcException(e);

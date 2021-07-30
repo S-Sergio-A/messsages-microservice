@@ -1,10 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { GlobalErrorCodes } from "../../exceptions/errorCodes/GlobalErrorCodes";
-import { ExistingMessageDto } from "../../messages/dto/existing-message.dto";
-import { InternalFailure } from "../interfaces/internal-failure.interface";
-import { Message } from "../interfaces/message";
-import { v4 } from "uuid";
 import sanitizeHtml from "sanitize-html";
+import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
+import { ExistingMessageDto } from "../messages/dto/existing-message.dto";
+import { InternalFailure } from "./interfaces/internal-failure.interface";
+import { Message } from "./interfaces/message";
 
 @Injectable()
 export class ValidationService {
@@ -12,6 +11,7 @@ export class ValidationService {
     let errors: Partial<Message & InternalFailure> = {};
 
     try {
+      console.log(data);
       if (await this._isEmpty(data.roomId)) {
         errors.roomId = GlobalErrorCodes.EMPTY_ERROR.value;
       }

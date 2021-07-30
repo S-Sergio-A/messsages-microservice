@@ -1,5 +1,5 @@
 import { PipeTransform, ArgumentMetadata, BadRequestException, Injectable } from "@nestjs/common";
-import { ValidationException } from "../../exceptions/Validation.exception";
+import { ValidationException } from "../exceptions/Validation.exception";
 import { ValidationService } from "./validation.service";
 
 @Injectable()

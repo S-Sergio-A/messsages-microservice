@@ -10,11 +10,12 @@ import {
 } from "@nestjs/websockets";
 import { forwardRef, Inject, Injectable, UsePipes } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
-import { MessageValidationPipe } from "../pipes/validation/message.validation.pipe";
+import { MessageValidationPipe } from "../pipes/message.validation.pipe";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
-import { MessagesService } from "./messages.service";
 import { ExistingMessageDto } from "./dto/existing-message.dto";
 import { NewMessageDto } from "./dto/new-message.dto";
+import { MessagesService } from "./messages.service";
+import { SearchMessageDto } from "./dto/search-message.dto";
 
 @Injectable()
 @WebSocketGateway({ path: "/socket.io/" })
@@ -60,7 +61,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       const userId = queryParams.userId.toString();
       const roomId = queryParams.roomId.toString();
 
-      const userPosition = this.connectedUsers.findIndex((item, index) => item.userId === userId && item.roomId === roomId);
+      const userPosition = this.connectedUsers.findIndex((item) => item.userId === userId && item.roomId === roomId);
 
       if (userPosition > -1) {
         this.connectedUsers = [...this.connectedUsers.slice(0, userPosition), ...this.connectedUsers.slice(userPosition + 1)];
@@ -134,11 +135,11 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
-  @UsePipes(new MessageValidationPipe())
   @SubscribeMessage("search-messages")
-  async searchMessages(@MessageBody() data: { roomId: string; keyword: string }, @ConnectedSocket() socket: Socket) {
+  async searchMessages(@MessageBody() data: SearchMessageDto, @ConnectedSocket() socket: Socket) {
     try {
       const searchedMessages = await this.messagesService.searchMessages(data.roomId, data.keyword);
+      
       this.server.to(data.roomId.toString()).emit("searched-messages", searchedMessages);
     } catch (e) {
       console.log(e, e.stack);
