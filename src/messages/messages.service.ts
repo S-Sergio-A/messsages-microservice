@@ -74,7 +74,7 @@ export class MessagesService {
         attachment: messageDto.attachment !== message.attachment ? messageDto.attachment : message.attachment,
         timestamp: message.timestamp
       };
-      
+
       await this.messageModel.updateOne({ _id: message._id }, updatedMessage);
       return HttpStatus.CREATED;
     } catch (e) {
@@ -91,7 +91,9 @@ export class MessagesService {
     try {
       const regex = new RegExp(keyword, "i");
 
-      return await this.messageModel.find({ roomId: new Types.ObjectId(roomId), text: regex });
+      return await this.messageModel
+        .find({ roomId: new Types.ObjectId(roomId), text: regex })
+        .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
     } catch (e) {
       console.log(e.stack);
       return new RpcException(e);
@@ -112,9 +114,9 @@ export class MessagesService {
       if (canDeleteAll) {
         delete query.user;
       }
-      
+
       const { deletedCount } = await this.messageModel.deleteOne(query);
-      
+
       if (deletedCount !== 0) {
         return await this.client.send(
           { cmd: "delete-message-reference" },
