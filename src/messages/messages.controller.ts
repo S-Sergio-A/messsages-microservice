@@ -11,4 +11,9 @@ export class MessagesController {
   async searchMessage(@Payload() { roomId, keyword }: { roomId: string; keyword: string }): Promise<MessageDocument[] | RpcException> {
     return this.messagesService.searchMessages(roomId, keyword);
   }
+
+  @MessagePattern({ cmd: "invoke" }, Transport.REDIS)
+  async invoke(): Promise<void> {
+    console.log("message-service invoked");
+  }
 }
