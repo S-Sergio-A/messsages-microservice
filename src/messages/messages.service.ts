@@ -11,6 +11,16 @@ import { RightsDocument } from "./schemas/rights.schema";
 import { NewMessageDto } from "./dto/new-message.dto";
 import { UserDocument } from "./schemas/user.schema";
 
+const cloudinary = require("cloudinary");
+
+cloudinary.config({
+  cloud_name: "gachi322",
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+});
+
+
 @Injectable()
 export class MessagesService {
   constructor(
@@ -35,6 +45,30 @@ export class MessagesService {
       messageDto.user = new Types.ObjectId(messageDto.user);
       messageDto.roomId = new Types.ObjectId(messageDto.roomId);
 
+      if (messageDto.attachment){
+        let resultingImageUrl;
+  
+        cloudinary.v2.uploader
+          .upload_stream(
+            {
+              resource_type: "raw",
+              folder: `ChatiZZe/${messageDto.roomId}/`,
+              public_id: `attachment__${messageDto.user}__${messageDto.timestamp}`
+            },
+            (error, result) => {
+              if (!error && result.url) {
+                resultingImageUrl = result.secure_url;
+              }
+            }
+          )
+          .end(messageDto.attachment);
+        
+        if (resultingImageUrl){
+          messageDto.attachment = resultingImageUrl;
+        }
+      }
+      
+      
       const createdMessage = new this.messageModel(messageDto);
       await createdMessage.save();
       await this.client.send(
