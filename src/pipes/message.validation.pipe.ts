@@ -10,13 +10,13 @@ export class MessageValidationPipe implements PipeTransform {
     }
 
     if (value.hasOwnProperty("text")) {
-      const { errors, isValid } = await ValidationService.prototype.validateMessage(value);
+      const { error, isValid } = await ValidationService.prototype.validateMessage(value);
 
       if (isValid) {
         return value;
       } else {
-        console.log(errors);
-        throw new ValidationException(errors);
+        console.log(error);
+        throw new ValidationException(error);
       }
     }
   }

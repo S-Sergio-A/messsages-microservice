@@ -8,12 +8,12 @@ import { Message } from "./interfaces/message";
 @Injectable()
 export class ValidationService {
   async validateMessage(data: ExistingMessageDto) {
-    let errors: Partial<Message & InternalFailure> = {};
+    let error: Partial<Message & InternalFailure> = {};
 
     try {
       console.log(data);
       if (await this._isEmpty(data.roomId)) {
-        errors.roomId = GlobalErrorCodes.EMPTY_ERROR.value;
+        error.roomId = GlobalErrorCodes.EMPTY_ERROR.value;
       }
 
       if (await this._isEmpty(data.timestamp)) {
@@ -25,7 +25,7 @@ export class ValidationService {
       }
 
       if (await this._isEmpty(data.text)) {
-        errors.text = GlobalErrorCodes.EMPTY_ERROR.value;
+        error.text = GlobalErrorCodes.EMPTY_ERROR.value;
       } else {
         data.text = sanitizeHtml(data.text);
         //  data.text = sanitizeHtml(data.text, {
@@ -38,15 +38,15 @@ export class ValidationService {
       }
 
       if (await this._isEmpty(data.user)) {
-        errors.user = GlobalErrorCodes.NO_USER_ID.value;
+        error.user = GlobalErrorCodes.NO_USER_ID.value;
       }
     } catch (err) {
-      errors.internalFailure = err;
+      error.internalFailure = err;
     }
 
     return {
-      errors,
-      isValid: await this._isEmpty(errors)
+      error,
+      isValid: await this._isEmpty(error)
     };
   }
 
