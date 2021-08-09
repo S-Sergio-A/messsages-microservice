@@ -9,10 +9,10 @@ export type RightsDocument = Rights & Document;
 class Rights {
   @Prop({ required: true, index: false, ref: "User", type: Types.ObjectId })
   user: UserDocument | Types.ObjectId;
-  
+
   @Prop({ required: true, index: false, ref: "Room", type: Types.ObjectId })
   roomId: RoomDocument | Types.ObjectId;
-  
+
   @Prop({ required: true, index: false })
   rights: string[];
 }
