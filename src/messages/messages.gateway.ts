@@ -66,8 +66,10 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       if (userPosition > -1) {
         this.connectedUsers = [...this.connectedUsers.slice(0, userPosition), ...this.connectedUsers.slice(userPosition + 1)];
       }
-
-      this.server.emit("users", this.connectedUsers);
+  
+      const usersConnectedToThisRoom = this.connectedUsers.filter((item) => item.roomId === queryParams.roomId);
+  
+      this.server.emit("users", usersConnectedToThisRoom);
     } catch (e) {
       console.log(e.stack);
       socket.send(

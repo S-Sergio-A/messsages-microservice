@@ -170,7 +170,7 @@ export class MessagesService {
     try {
       return await this.messageModel
         .find({ roomId: new Types.ObjectId(roomId) })
-        .sort({ timestamp: 1 })
+        .sort({ $natural: -1 })
         .skip(start)
         .limit(end)
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
