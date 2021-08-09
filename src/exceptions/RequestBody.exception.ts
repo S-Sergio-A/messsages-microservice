@@ -1,8 +1,8 @@
 export class RequestBodyException extends Error {
   public response: { key: string; code: number; message: string };
 
-  constructor(public readonly error: { readonly key: string; readonly code: number; readonly message: string }, ...args) {
+  constructor(public readonly errors: { readonly key: string; readonly code: number; readonly message: string }, ...args) {
     super(...args);
-    this.response = { key: error.key, code: error.code, message: error.message };
+    this.response = { key: errors.key, code: errors.code, message: errors.message };
   }
 }
