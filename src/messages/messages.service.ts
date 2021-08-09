@@ -11,14 +11,7 @@ import { RightsDocument } from "./schemas/rights.schema";
 import { NewMessageDto } from "./dto/new-message.dto";
 import { UserDocument } from "./schemas/user.schema";
 
-const cloudinary = require("cloudinary");
-
-cloudinary.config({
-  cloud_name: "gachi322",
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true
-});
+const cloudinary = require("cloudinary").v2;
 
 @Injectable()
 export class MessagesService {
@@ -45,23 +38,26 @@ export class MessagesService {
       messageDto.roomId = new Types.ObjectId(messageDto.roomId);
 
       if (messageDto.attachment) {
-        let resultingImageUrl;
+        cloudinary.config({
+          cloud_name: process.env.CLOUDINARY_CLOUD,
+          api_key: process.env.CLOUDINARY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET,
+          secure: true
+        });
 
-        cloudinary.v2.uploader.upload(
-          messageDto.attachment,
-          {
-            folder: `ChatiZZe/${messageDto.roomId}/`,
-            public_id: `attachment__${messageDto.user}__${messageDto.timestamp}`
-          },
-          (error, result) => {
-            if (!error && result.url) {
-              resultingImageUrl = result.secure_url;
-            }
+        const length = messageDto.attachment.length <= 5 ? messageDto.attachment.length : 5;
+
+        for (let i = 0; i < length; i++) {
+          const result = await cloudinary.uploader.upload(messageDto.attachment[i], {
+            overwrite: true,
+            invalidate: true,
+            folder: `ChatiZZe/${messageDto.roomId}/messages/`,
+            public_id: `attachment__${messageDto.user}__${messageDto.roomId}__${messageDto.timestamp}`
+          });
+
+          if (result) {
+            messageDto.attachment[i] = result.secure_url;
           }
-        );
-
-        if (resultingImageUrl) {
-          messageDto.attachment = resultingImageUrl;
         }
       }
 
@@ -181,6 +177,19 @@ export class MessagesService {
     } catch (e) {
       console.log(e.stack);
       throw new InternalException({
+        key: "INTERNAL_ERROR",
+        code: GlobalErrorCodes.INTERNAL_ERROR.code,
+        message: GlobalErrorCodes.INTERNAL_ERROR.value
+      });
+    }
+  }
+
+  async leaveRoom(userId: string, roomId: string): Promise<boolean | Observable<any> | RpcException> {
+    try {
+      return await this.client.send({ cmd: "delete-user" }, { userId, roomId, type: "LEAVE_ROOM", rights: [""] });
+    } catch (e) {
+      console.log(e.stack);
+      return new RpcException({
         key: "INTERNAL_ERROR",
         code: GlobalErrorCodes.INTERNAL_ERROR.code,
         message: GlobalErrorCodes.INTERNAL_ERROR.value

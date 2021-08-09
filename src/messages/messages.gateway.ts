@@ -13,9 +13,9 @@ import { Server, Socket } from "socket.io";
 import { MessageValidationPipe } from "../pipes/message.validation.pipe";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
 import { ExistingMessageDto } from "./dto/existing-message.dto";
+import { SearchMessageDto } from "./dto/search-message.dto";
 import { NewMessageDto } from "./dto/new-message.dto";
 import { MessagesService } from "./messages.service";
-import { SearchMessageDto } from "./dto/search-message.dto";
 
 @Injectable()
 @WebSocketGateway({ path: "/socket.io/" })
@@ -139,7 +139,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   async searchMessages(@MessageBody() data: SearchMessageDto, @ConnectedSocket() socket: Socket) {
     try {
       const searchedMessages = await this.messagesService.searchMessages(data.roomId, data.keyword);
-      
+
       this.server.to(data.roomId.toString()).emit("searched-messages", searchedMessages);
     } catch (e) {
       console.log(e, e.stack);
@@ -202,17 +202,11 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
-  /* Not working
-   */
   @SubscribeMessage("leave-room")
-  onRoomLeave(@ConnectedSocket() socket: Socket): void {
+  async onRoomLeave(@MessageBody() data: { roomId: string; userId: string }, @ConnectedSocket() socket: Socket): Promise<void> {
     try {
-      const queryParams = socket.handshake.query;
-
-      const userId = queryParams.userId.toString();
-      const roomId = queryParams.roomId.toString();
-
-      socket.leave(roomId);
+      await this.messagesService.leaveRoom(data.roomId, data.userId);
+      socket.leave(data.roomId);
     } catch (e) {
       console.log(e.stack);
       socket.send(

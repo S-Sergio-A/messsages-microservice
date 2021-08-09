@@ -18,7 +18,7 @@ export class NewMessageDto {
   text: string;
 
   @IsString()
-  attachment?: string;
+  attachment?: any[];
 
   @IsDefined()
   @IsNotEmpty()
