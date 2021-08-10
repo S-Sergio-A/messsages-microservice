@@ -11,7 +11,6 @@ export class ValidationService {
     let error: Partial<Message & InternalFailure> = {};
 
     try {
-      console.log(data);
       if (await this._isEmpty(data.roomId)) {
         error.roomId = GlobalErrorCodes.EMPTY_ERROR.value;
       }
@@ -24,9 +23,9 @@ export class ValidationService {
         data.timestamp = `${localTime} ${localDate}`;
       }
 
-      if (await this._isEmpty(data.text)) {
+      if ((await this._isEmpty(data.attachment)) && (await this._isEmpty(data.text))) {
         error.text = GlobalErrorCodes.EMPTY_ERROR.value;
-      } else {
+      } else if (!(await this._isEmpty(data.text))) {
         data.text = sanitizeHtml(data.text);
         //  data.text = sanitizeHtml(data.text, {
         //   allowedTags: [ 'b', 'i', 'em', 'strong', 'a' ],

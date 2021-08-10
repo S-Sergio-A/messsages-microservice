@@ -16,7 +16,7 @@ class Message {
   @Prop({ required: true, index: false })
   timestamp: string;
 
-  @Prop({ required: true, index: false })
+  @Prop({ required: false, index: false })
   text: string;
 
   @Prop({ required: false, index: false })
