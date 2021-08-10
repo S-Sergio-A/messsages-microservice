@@ -20,7 +20,7 @@ class Message {
   text: string;
 
   @Prop({ required: false, index: false })
-  attachment: string;
+  attachment: any[];
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
