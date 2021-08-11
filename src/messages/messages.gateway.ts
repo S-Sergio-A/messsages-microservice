@@ -8,7 +8,7 @@ import {
   WebSocketServer,
   WsException
 } from "@nestjs/websockets";
-import { forwardRef, Inject, Injectable, UsePipes } from "@nestjs/common";
+import { forwardRef, HttpStatus, Inject, Injectable, UsePipes } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
 import { MessageValidationPipe } from "../pipes/message.validation.pipe";
 import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
@@ -16,6 +16,8 @@ import { ExistingMessageDto } from "./dto/existing-message.dto";
 import { SearchMessageDto } from "./dto/search-message.dto";
 import { NewMessageDto } from "./dto/new-message.dto";
 import { MessagesService } from "./messages.service";
+import { Observable } from "rxjs";
+import { RpcException } from "@nestjs/microservices";
 
 @Injectable()
 @WebSocketGateway({ path: "/socket.io/" })
@@ -66,9 +68,9 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       if (userPosition > -1) {
         this.connectedUsers = [...this.connectedUsers.slice(0, userPosition), ...this.connectedUsers.slice(userPosition + 1)];
       }
-  
+
       const usersConnectedToThisRoom = this.connectedUsers.filter((item) => item.roomId === queryParams.roomId);
-  
+
       this.server.emit("users", usersConnectedToThisRoom);
     } catch (e) {
       console.log(e.stack);
@@ -205,10 +207,13 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   @SubscribeMessage("leave-room")
-  async onRoomLeave(@MessageBody() data: { roomId: string; userId: string }, @ConnectedSocket() socket: Socket): Promise<void> {
+  async onRoomLeave(
+    @MessageBody() data: { roomId: string; userId: string },
+    @ConnectedSocket() socket: Socket
+  ): Promise<HttpStatus | Observable<any> | RpcException> {
     try {
-      await this.messagesService.leaveRoom(data.roomId, data.userId);
       socket.leave(data.roomId);
+      return await this.messagesService.leaveRoom(data.roomId, data.userId);
     } catch (e) {
       console.log(e.stack);
       socket.send(

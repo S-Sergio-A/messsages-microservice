@@ -184,7 +184,7 @@ export class MessagesService {
     }
   }
 
-  async leaveRoom(userId: string, roomId: string): Promise<boolean | Observable<any> | RpcException> {
+  async leaveRoom(userId: string, roomId: string): Promise<HttpStatus | Observable<any> | RpcException> {
     try {
       return await this.client.send({ cmd: "delete-user" }, { userId, roomId, type: "LEAVE_ROOM", rights: [""] });
     } catch (e) {
