@@ -71,6 +71,25 @@ export class MessagesService {
           messageId: createdMessage._id
         }
       );
+
+      await this.client.send(
+        { cmd: "add-recent-message" },
+        {
+          roomId: messageDto.roomId,
+          recentMessage: {
+            _id: createdMessage,
+            user: {
+              _id: messageDto.user,
+              username: messageDto.username
+            },
+            roomId: createdMessage.roomId,
+            text: createdMessage.text,
+            attachment: createdMessage.attachment,
+            timestamp: createdMessage.timestamp
+          }
+        }
+      );
+
       return await this.messageModel
         .findOne({ _id: createdMessage._id })
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
