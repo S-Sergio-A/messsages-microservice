@@ -213,7 +213,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   ): Promise<HttpStatus | Observable<any> | RpcException> {
     try {
       socket.leave(data.roomId);
-      return await this.messagesService.leaveRoom(data.roomId, data.userId);
+      return await this.messagesService.leaveRoom(data.userId, data.roomId);
     } catch (e) {
       console.log(e.stack);
       socket.send(
