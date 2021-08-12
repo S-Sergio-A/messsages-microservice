@@ -24,7 +24,7 @@ export class NewMessageDto {
   @IsNotEmpty()
   @IsString()
   user: string | Types.ObjectId;
-  
+
   @IsDefined()
   @IsNotEmpty()
   @IsString()
