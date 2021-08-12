@@ -77,7 +77,7 @@ export class MessagesService {
         {
           roomId: messageDto.roomId,
           recentMessage: {
-            _id: createdMessage,
+            _id: createdMessage._id,
             user: {
               _id: messageDto.user,
               username: messageDto.username
