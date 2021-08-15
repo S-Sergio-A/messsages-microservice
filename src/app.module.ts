@@ -5,6 +5,7 @@ import { APP_GUARD } from "@nestjs/core";
 import { Module } from "@nestjs/common";
 import { ValidationModule } from "./pipes/validation.module";
 import { MessageModule } from "./messages/messages.module";
+import { MessagesController } from "./messages/messages.controller";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MessageModule } from "./messages/messages.module";
     MessageModule,
     ValidationModule
   ],
+  controllers: [MessagesController],
   providers: [
     {
       provide: APP_GUARD,
