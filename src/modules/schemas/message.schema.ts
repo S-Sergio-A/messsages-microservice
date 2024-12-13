@@ -1,4 +1,4 @@
-import { Schema, SchemaFactory, Prop } from "@nestjs/mongoose";
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 import { UserDocument } from "./user.schema";
 import { RoomDocument } from "./room.schema";
@@ -7,20 +7,20 @@ export type MessageDocument = Message & Document;
 
 @Schema()
 class Message {
-  @Prop({ required: true, index: false, ref: "Room", type: Types.ObjectId })
+  @Prop({ required: true, ref: "Room", type: Types.ObjectId })
   roomId: RoomDocument | Types.ObjectId;
 
-  @Prop({ required: true, index: false, ref: "User", type: Types.ObjectId })
+  @Prop({ required: true, ref: "User", type: Types.ObjectId })
   user: UserDocument | Types.ObjectId;
 
-  @Prop({ required: true, index: false })
+  @Prop({ required: true })
   timestamp: string;
 
-  @Prop({ required: false, index: false })
+  @Prop({ required: true })
   text: string;
 
-  @Prop({ required: false, index: false })
-  attachment: any[];
+  @Prop({ required: false })
+  attachment: string;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);

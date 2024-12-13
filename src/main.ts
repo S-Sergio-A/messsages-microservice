@@ -3,17 +3,35 @@ import { NestFactory } from "@nestjs/core";
 import helmet from "helmet";
 import "reflect-metadata";
 import { AppModule } from "./app.module";
+import { LoggerService } from "~/modules/common";
+import { ConfigService } from "@nestjs/config";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = await app.resolve(LoggerService); // Use resolve() for transient scoped providers
+  const configService = app.get(ConfigService);
 
+  app.useLogger(logger);
   app.use(helmet());
+
+  const clientUrl = configService.get<string>("app.clientUrl");
   app.enableCors({
-    origin: [process.env.FRONT_URL],
+    origin: [clientUrl],
     credentials: true,
-    exposedHeaders: ["Access-Token", "Refresh-Token", "Client-Token", "Country", "Content-Type", "Fingerprint"],
-    methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"]
+    exposedHeaders: ["X-Access-Token", "X-Refresh-Token", "X-Client-Token", "X-Country", "Content-Type"],
+    methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"]
   });
+
+  process.on("uncaughtException", (err) => {
+    logger.error(`Uncaught Exception: ${err.message}`);
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    logger.error(`Unhandled Rejection: ${reason}`);
+  });
+
+  const port = configService.get<number>("app.port");
+  await app.listen(port);
 
   app.useWebSocketAdapter(new IoAdapter(app));
   await app.listen(process.env.PORT || 3200);
