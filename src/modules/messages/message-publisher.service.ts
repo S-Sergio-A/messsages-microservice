@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { LoggerService } from "~/modules/common";
+import { LoggerService } from "@ssmovzh/chatterly-common-utils";
 import { RabbitProducerService } from "~/modules/rabbit/rabbit-producer.service";
 
 @Injectable()

@@ -6,9 +6,11 @@ import { Observable } from "rxjs";
 import { v2 as cloudinary } from "cloudinary";
 import { NewMessageDto } from "./dto/new-message.dto";
 import {
+  CloudinaryConfigInterface,
   ConnectionNamesEnum,
   GLOBAL_ERROR_CODES,
   GlobalErrorCodesEnum,
+  LoggerService,
   Message,
   ModelsNamesEnum,
   RabbitQueuesEnum,
@@ -16,7 +18,6 @@ import {
   RightsEnum,
   User
 } from "@ssmovzh/chatterly-common-utils";
-import { CloudinaryConfigInterface, LoggerService } from "~/modules/common";
 import { ConfigService } from "@nestjs/config";
 import { MessagePublisherService } from "~/modules/messages/message-publisher.service";
 import { ExistingMessageDto } from "~/modules/messages/dto";

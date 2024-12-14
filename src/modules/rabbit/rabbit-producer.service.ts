@@ -1,8 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import * as amqp from "amqplib";
 import { ConfigService } from "@nestjs/config";
-import { LoggerService, QueueResponseInterface } from "~/modules/common";
-import { RabbitConfigInterface } from "@ssmovzh/chatterly-common-utils";
+import { LoggerService, QueueResponseInterface, RabbitConfigInterface } from "@ssmovzh/chatterly-common-utils";
 
 @Injectable()
 export class RabbitProducerService {

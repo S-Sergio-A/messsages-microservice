@@ -8,15 +8,12 @@ import {
   WebSocketServer,
   WsException
 } from "@nestjs/websockets";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { GLOBAL_ERROR_CODES, GlobalErrorCodesEnum, LoggerService } from "@ssmovzh/chatterly-common-utils";
 import { Server, Socket } from "socket.io";
 import { ExistingMessageDto, SearchMessageDto } from "~/modules/messages/dto";
 import { NewMessageDto } from "./dto/new-message.dto";
 import { MessagesService } from "./messages.service";
-import { Observable } from "rxjs";
-import { RpcException } from "@nestjs/microservices";
-import { LoggerService } from "~/modules/common";
-import { GLOBAL_ERROR_CODES, GlobalErrorCodesEnum } from "@ssmovzh/chatterly-common-utils";
 
 @Injectable()
 @WebSocketGateway({ path: "/socket.io/" })
@@ -218,10 +215,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   @SubscribeMessage("leave-room")
-  async onRoomLeave(
-    @MessageBody() data: { roomId: string; userId: string },
-    @ConnectedSocket() socket: Socket
-  ): Promise<HttpStatus | Observable<any> | RpcException> {
+  async onRoomLeave(@MessageBody() data: { roomId: string; userId: string }, @ConnectedSocket() socket: Socket): Promise<any> {
     try {
       socket.leave(data.roomId);
       return await this.messagesService.leaveRoom(data.userId, data.roomId);

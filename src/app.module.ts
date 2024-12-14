@@ -4,9 +4,8 @@ import { APP_GUARD } from "@nestjs/core";
 import { Module } from "@nestjs/common";
 import { MessageModule } from "~/modules/messages/messages.module";
 import { RabbitModule } from "~/modules/rabbit";
-import { defaultImports, LoggerModule } from "~/modules/common";
-import { HealthCheckModule } from "~/modules/health-check";
-import { ConnectionNamesEnum } from "@ssmovzh/chatterly-common-utils";
+import { defaultImports } from "~/modules/common";
+import { ConnectionNamesEnum, HealthCheckModule, LoggerModule } from "@ssmovzh/chatterly-common-utils";
 
 @Module({
   imports: [

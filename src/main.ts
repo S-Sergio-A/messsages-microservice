@@ -3,8 +3,8 @@ import { NestFactory } from "@nestjs/core";
 import helmet from "helmet";
 import "reflect-metadata";
 import { AppModule } from "./app.module";
-import { LoggerService } from "~/modules/common";
 import { ConfigService } from "@nestjs/config";
+import { LoggerService } from "@ssmovzh/chatterly-common-utils";
 
 (async () => {
   const app = await NestFactory.create(AppModule);

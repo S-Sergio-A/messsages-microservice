@@ -1,6 +1,6 @@
 import * as process from "process";
 import * as dotenv from "dotenv";
-import { CloudinaryConfigInterface } from "~/modules/common";
+import { CloudinaryConfigInterface } from "@ssmovzh/chatterly-common-utils";
 
 dotenv.config();
 
