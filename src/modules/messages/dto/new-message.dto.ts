@@ -2,7 +2,7 @@ import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from "class-validat
 import { Transform } from "class-transformer";
 import sanitizeHtml from "sanitize-html";
 import { Types } from "mongoose";
-import { RightsEnum } from "~/modules/common";
+import { RightsEnum } from "@ssmovzh/chatterly-common-utils";
 
 export class NewMessageDto {
   @IsNotEmpty()

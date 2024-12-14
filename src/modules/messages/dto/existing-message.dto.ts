@@ -2,8 +2,7 @@ import { IsArray, IsEnum, IsNotEmpty, IsString } from "class-validator";
 import { Transform } from "class-transformer";
 import sanitizeHtml from "sanitize-html";
 import { Types } from "mongoose";
-import { UserDocument } from "~/modules/schemas";
-import { RightsEnum } from "~/modules/common";
+import { RightsEnum, User } from "@ssmovzh/chatterly-common-utils";
 
 export class ExistingMessageDto {
   @IsNotEmpty()
@@ -27,7 +26,7 @@ export class ExistingMessageDto {
   attachment?: any[];
 
   @IsNotEmpty()
-  user: UserDocument;
+  user: User;
 
   @IsArray()
   @IsEnum(RightsEnum, { each: true })

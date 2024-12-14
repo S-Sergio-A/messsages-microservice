@@ -6,10 +6,15 @@ import { MessageModule } from "~/modules/messages/messages.module";
 import { RabbitModule } from "~/modules/rabbit";
 import { defaultImports, LoggerModule } from "~/modules/common";
 import { HealthCheckModule } from "~/modules/health-check";
+import { ConnectionNamesEnum } from "@ssmovzh/chatterly-common-utils";
 
 @Module({
   imports: [
     ...defaultImports,
+    MessageModule,
+    RabbitModule,
+    HealthCheckModule,
+    LoggerModule,
     ThrottlerModule.forRoot({
       throttlers: [
         {
@@ -22,25 +27,21 @@ import { HealthCheckModule } from "~/modules/health-check";
     MongooseModule.forRoot(
       `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_USER_DATABASE_NAME}?retryWrites=true&w=majority`,
       {
-        connectionName: "user"
-      }
-    ),
-    MongooseModule.forRoot(
-      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_MESSAGES_DATABASE_NAME}?retryWrites=true&w=majority`,
-      {
-        connectionName: "message"
+        connectionName: ConnectionNamesEnum.USERS
       }
     ),
     MongooseModule.forRoot(
       `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_ROOMS_DATABASE_NAME}?retryWrites=true&w=majority`,
       {
-        connectionName: "room"
+        connectionName: ConnectionNamesEnum.ROOMS
       }
     ),
-    LoggerModule,
-    MessageModule,
-    RabbitModule,
-    HealthCheckModule
+    MongooseModule.forRoot(
+      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_MESSAGES_DATABASE_NAME}?retryWrites=true&w=majority`,
+      {
+        connectionName: ConnectionNamesEnum.MESSAGES
+      }
+    )
   ],
   providers: [
     {

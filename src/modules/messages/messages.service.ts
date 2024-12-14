@@ -1,41 +1,48 @@
-import { ClientProxy, ClientProxyFactory, RpcException, Transport } from "@nestjs/microservices";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { RpcException } from "@nestjs/microservices";
+import { HttpStatus, Injectable, InternalServerErrorException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Observable } from "rxjs";
 import { v2 as cloudinary } from "cloudinary";
 import { NewMessageDto } from "./dto/new-message.dto";
-import { Message, ModelsNamesEnum, Right, RightsEnum, User } from "@ssmovzh/chatterly-common-utils";
+import {
+  ConnectionNamesEnum,
+  GLOBAL_ERROR_CODES,
+  GlobalErrorCodesEnum,
+  Message,
+  ModelsNamesEnum,
+  RabbitQueuesEnum,
+  Right,
+  RightsEnum,
+  User
+} from "@ssmovzh/chatterly-common-utils";
+import { CloudinaryConfigInterface, LoggerService } from "~/modules/common";
+import { ConfigService } from "@nestjs/config";
+import { MessagePublisherService } from "~/modules/messages/message-publisher.service";
+import { ExistingMessageDto } from "~/modules/messages/dto";
 
 @Injectable()
 export class MessagesService {
   constructor(
-    @InjectModel(ModelsNamesEnum.MESSAGES) private readonly messageModel: Model<Message>,
-    @InjectModel(ModelsNamesEnum.USERS) private readonly userModel: Model<User>,
-    @InjectModel(ModelsNamesEnum.RIGHTS) private readonly rightsModel: Model<Right>
-  ) {
-    this.client = ClientProxyFactory.create({
-      transport: Transport.REDIS,
-      options: {
-        url: `redis://${process.env.REDIS_DB_NAME}:${process.env.REDIS_PASSWORD}@${process.env.REDIS_ENDPOINT}:${process.env.REDIS_PORT}`,
-        retryDelay: 3000,
-        retryAttempts: 10
-      }
-    });
-  }
-
-  client: ClientProxy;
+    @InjectModel(ModelsNamesEnum.MESSAGES, ConnectionNamesEnum.MESSAGES) private readonly messageModel: Model<Message>,
+    @InjectModel(ModelsNamesEnum.USERS, ConnectionNamesEnum.USERS) private readonly userModel: Model<User>,
+    @InjectModel(ModelsNamesEnum.RIGHTS, ConnectionNamesEnum.ROOMS) private readonly rightsModel: Model<Right>,
+    private readonly logger: LoggerService,
+    private readonly configService: ConfigService,
+    private readonly messagePublisherService: MessagePublisherService
+  ) {}
 
   async addMessage(messageDto: NewMessageDto, rights: RightsEnum[]): Promise<Message> {
     try {
       messageDto.user = new Types.ObjectId(messageDto.user);
       messageDto.roomId = new Types.ObjectId(messageDto.roomId);
+      const { apiKey, apiSecret, cloudName } = this.configService.get<CloudinaryConfigInterface>("cloudinary");
 
       if (messageDto.attachment) {
         cloudinary.config({
-          cloud_name: process.env.CLOUDINARY_CLOUD,
-          api_key: process.env.CLOUDINARY_API_KEY,
-          api_secret: process.env.CLOUDINARY_API_SECRET,
+          cloud_name: cloudName,
+          api_key: apiKey,
+          api_secret: apiSecret,
           secure: true
         });
 
@@ -57,42 +64,38 @@ export class MessagesService {
 
       const createdMessage = new this.messageModel(messageDto);
       await createdMessage.save();
-      this.client.send(
-        { cmd: "add-message-reference" },
-        {
-          rights,
-          roomId: messageDto.roomId,
-          messageId: createdMessage._id
-        }
-      );
+      await this.messagePublisherService.publishMessage(RabbitQueuesEnum.ADD_MESSAGE_REFERENCE, {
+        rights,
+        roomId: messageDto.roomId,
+        messageId: createdMessage._id
+      });
 
-      this.client.send(
-        { cmd: "add-recent-message" },
-        {
-          roomId: messageDto.roomId,
-          recentMessage: {
-            _id: createdMessage._id,
-            user: {
-              _id: messageDto.user,
-              username: messageDto.username
-            },
-            roomId: createdMessage.roomId,
-            text: createdMessage.text,
-            attachment: createdMessage.attachment,
-            timestamp: createdMessage.timestamp
-          }
+      await this.messagePublisherService.publishMessage(RabbitQueuesEnum.ADD_RECENT_MESSAGE, {
+        roomId: messageDto.roomId,
+        recentMessage: {
+          _id: createdMessage._id,
+          user: {
+            _id: messageDto.user,
+            username: messageDto.username
+          },
+          roomId: createdMessage.roomId,
+          text: createdMessage.text,
+          attachment: createdMessage.attachment,
+          timestamp: createdMessage.timestamp
         }
-      );
+      });
 
       return await this.messageModel
         .findOne({ _id: createdMessage._id })
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
-    } catch (e) {
-      console.log(e, e.stack);
-      throw new InternalException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
+    } catch (error) {
+      this.logger.error(error, error.trace);
+      const { httpCode, msg } = GLOBAL_ERROR_CODES.get(GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR);
+
+      new InternalServerErrorException({
+        key: GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR,
+        code: httpCode,
+        message: msg
       });
     }
   }
@@ -116,12 +119,14 @@ export class MessagesService {
 
       await this.messageModel.updateOne({ _id: message._id }, updatedMessage);
       return HttpStatus.CREATED;
-    } catch (e) {
-      console.log(e.stack);
-      throw new InternalException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
+    } catch (error) {
+      this.logger.error(error, error.trace);
+      const { httpCode, msg } = GLOBAL_ERROR_CODES.get(GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR);
+
+      new InternalServerErrorException({
+        key: GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR,
+        code: httpCode,
+        message: msg
       });
     }
   }
@@ -133,13 +138,19 @@ export class MessagesService {
       return await this.messageModel
         .find({ roomId: new Types.ObjectId(roomId), text: regex })
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
-    } catch (e) {
-      console.log(e.stack);
-      return new RpcException(e);
+    } catch (error) {
+      this.logger.error(error, error.trace);
+      const { httpCode, msg } = GLOBAL_ERROR_CODES.get(GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR);
+
+      new InternalServerErrorException({
+        key: GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR,
+        code: httpCode,
+        message: msg
+      });
     }
   }
 
-  async deleteMessage(rights: RightsEnum[], messageId: string, roomId: string, userId: string): Promise<HttpStatus | Observable<any>> {
+  async deleteMessage(rights: RightsEnum[], messageId: string, roomId: string, userId: string): Promise<any> {
     try {
       const canDeleteAll =
         rights.includes(RightsEnum.DELETE_MESSAGES) &&
@@ -158,24 +169,23 @@ export class MessagesService {
       const { deletedCount } = await this.messageModel.deleteOne(query);
 
       if (deletedCount !== 0) {
-        return this.client.send(
-          { cmd: "delete-message-reference" },
-          {
-            rights,
-            userId,
-            roomId,
-            messageId
-          }
-        );
+        return this.messagePublisherService.publishMessage(RabbitQueuesEnum.DELETE_MESSAGE_REFERENCE, {
+          rights,
+          userId,
+          roomId,
+          messageId
+        });
       } else {
         return HttpStatus.BAD_REQUEST;
       }
-    } catch (e) {
-      console.log(e.stack);
-      throw new InternalException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
+    } catch (error) {
+      this.logger.error(error, error.trace);
+      const { httpCode, msg } = GLOBAL_ERROR_CODES.get(GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR);
+
+      new InternalServerErrorException({
+        key: GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR,
+        code: httpCode,
+        message: msg
       });
     }
   }
@@ -188,25 +198,34 @@ export class MessagesService {
         .skip(start)
         .limit(end)
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
-    } catch (e) {
-      console.log(e.stack);
-      throw new InternalException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
+    } catch (error) {
+      this.logger.error(error, error.trace);
+      const { httpCode, msg } = GLOBAL_ERROR_CODES.get(GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR);
+
+      new InternalServerErrorException({
+        key: GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR,
+        code: httpCode,
+        message: msg
       });
     }
   }
 
-  async leaveRoom(userId: string, roomId: string): Promise<HttpStatus | Observable<any> | RpcException> {
+  async leaveRoom(userId: string, roomId: string): Promise<any> {
     try {
-      return this.client.send({ cmd: "delete-user" }, { userId, roomId, type: "LEAVE_ROOM", rights: [] });
-    } catch (e) {
-      console.log(e.stack);
-      return new RpcException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
+      return this.messagePublisherService.publishMessage(RabbitQueuesEnum.DELETE_USER, {
+        userId,
+        roomId,
+        type: "LEAVE_ROOM",
+        rights: []
+      });
+    } catch (error) {
+      this.logger.error(error, error.trace);
+      const { httpCode, msg } = GLOBAL_ERROR_CODES.get(GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR);
+
+      new InternalServerErrorException({
+        key: GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR,
+        code: httpCode,
+        message: msg
       });
     }
   }
@@ -219,12 +238,14 @@ export class MessagesService {
     try {
       const exists = await this.rightsModel.exists({ user, roomId, rights });
       return !!exists._id;
-    } catch (e) {
-      console.log(e.stack);
-      return new RpcException({
-        key: "INTERNAL_ERROR",
-        code: GlobalErrorCodes.INTERNAL_ERROR.code,
-        message: GlobalErrorCodes.INTERNAL_ERROR.value
+    } catch (error) {
+      this.logger.error(error, error.trace);
+      const { httpCode, msg } = GLOBAL_ERROR_CODES.get(GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR);
+
+      new InternalServerErrorException({
+        key: GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR,
+        code: httpCode,
+        message: msg
       });
     }
   }
