@@ -3,22 +3,16 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Observable } from "rxjs";
-import { GlobalErrorCodes } from "../exceptions/errorCodes/GlobalErrorCodes";
-import { InternalException } from "../exceptions/Internal.exception";
-import { ExistingMessageDto } from "./dto/existing-message.dto";
-import { MessageDocument } from "./schemas/message.schema";
-import { RightsDocument } from "./schemas/rights.schema";
+import { v2 as cloudinary } from "cloudinary";
 import { NewMessageDto } from "./dto/new-message.dto";
-import { UserDocument } from "./schemas/user.schema";
-
-const cloudinary = require("cloudinary").v2;
+import { Message, ModelsNamesEnum, Right, RightsEnum, User } from "@ssmovzh/chatterly-common-utils";
 
 @Injectable()
 export class MessagesService {
   constructor(
-    @InjectModel("Message") private readonly messageModel: Model<MessageDocument>,
-    @InjectModel("User") private readonly userModel: Model<UserDocument>,
-    @InjectModel("Rights") private readonly rightsModel: Model<RightsDocument>
+    @InjectModel(ModelsNamesEnum.MESSAGES) private readonly messageModel: Model<Message>,
+    @InjectModel(ModelsNamesEnum.USERS) private readonly userModel: Model<User>,
+    @InjectModel(ModelsNamesEnum.RIGHTS) private readonly rightsModel: Model<Right>
   ) {
     this.client = ClientProxyFactory.create({
       transport: Transport.REDIS,
@@ -32,7 +26,7 @@ export class MessagesService {
 
   client: ClientProxy;
 
-  async addMessage(messageDto: NewMessageDto, rights: string[]): Promise<MessageDocument> {
+  async addMessage(messageDto: NewMessageDto, rights: RightsEnum[]): Promise<Message> {
     try {
       messageDto.user = new Types.ObjectId(messageDto.user);
       messageDto.roomId = new Types.ObjectId(messageDto.roomId);
@@ -51,7 +45,7 @@ export class MessagesService {
           const result = await cloudinary.uploader.upload(messageDto.attachment[i], {
             overwrite: true,
             invalidate: true,
-            folder: `ChatiZZe/${messageDto.roomId}/messages/`,
+            folder: `Chatterly/${messageDto.roomId}/messages/`,
             public_id: `attachment__${messageDto.user}__${messageDto.roomId}__${messageDto.timestamp}`
           });
 
@@ -63,7 +57,7 @@ export class MessagesService {
 
       const createdMessage = new this.messageModel(messageDto);
       await createdMessage.save();
-      await this.client.send(
+      this.client.send(
         { cmd: "add-message-reference" },
         {
           rights,
@@ -72,7 +66,7 @@ export class MessagesService {
         }
       );
 
-      await this.client.send(
+      this.client.send(
         { cmd: "add-recent-message" },
         {
           roomId: messageDto.roomId,
@@ -132,7 +126,7 @@ export class MessagesService {
     }
   }
 
-  async searchMessages(roomId: string, keyword: string): Promise<MessageDocument[] | RpcException> {
+  async searchMessages(roomId: string, keyword: string): Promise<Message[] | RpcException> {
     try {
       const regex = new RegExp(keyword, "i");
 
@@ -145,10 +139,11 @@ export class MessagesService {
     }
   }
 
-  async deleteMessage(rights: string[], messageId: string, roomId: string, userId: string): Promise<HttpStatus | Observable<any>> {
+  async deleteMessage(rights: RightsEnum[], messageId: string, roomId: string, userId: string): Promise<HttpStatus | Observable<any>> {
     try {
       const canDeleteAll =
-        rights.includes("DELETE_MESSAGES") && (await this._verifyRights(rights, new Types.ObjectId(userId), new Types.ObjectId(roomId)));
+        rights.includes(RightsEnum.DELETE_MESSAGES) &&
+        (await this._verifyRights(rights, new Types.ObjectId(userId), new Types.ObjectId(roomId)));
 
       const query = {
         _id: new Types.ObjectId(messageId),
@@ -163,7 +158,7 @@ export class MessagesService {
       const { deletedCount } = await this.messageModel.deleteOne(query);
 
       if (deletedCount !== 0) {
-        return await this.client.send(
+        return this.client.send(
           { cmd: "delete-message-reference" },
           {
             rights,
@@ -185,7 +180,7 @@ export class MessagesService {
     }
   }
 
-  async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<MessageDocument[]> {
+  async getRoomMessagesLimited(roomId: string, start: number = 0, end: number = 50): Promise<Message[]> {
     try {
       return await this.messageModel
         .find({ roomId: new Types.ObjectId(roomId) })
@@ -205,7 +200,7 @@ export class MessagesService {
 
   async leaveRoom(userId: string, roomId: string): Promise<HttpStatus | Observable<any> | RpcException> {
     try {
-      return await this.client.send({ cmd: "delete-user" }, { userId, roomId, type: "LEAVE_ROOM", rights: [""] });
+      return this.client.send({ cmd: "delete-user" }, { userId, roomId, type: "LEAVE_ROOM", rights: [] });
     } catch (e) {
       console.log(e.stack);
       return new RpcException({
@@ -217,12 +212,13 @@ export class MessagesService {
   }
 
   private async _verifyRights(
-    rights: string[],
+    rights: RightsEnum[],
     user: Types.ObjectId,
     roomId: Types.ObjectId
   ): Promise<boolean | Observable<any> | RpcException> {
     try {
-      return await this.rightsModel.exists({ user, roomId, rights });
+      const exists = await this.rightsModel.exists({ user, roomId, rights });
+      return !!exists._id;
     } catch (e) {
       console.log(e.stack);
       return new RpcException({

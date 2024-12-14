@@ -1,38 +1,35 @@
-import { IsArray, IsDefined, IsNotEmpty, IsString } from "class-validator";
+import { IsArray, IsEnum, IsNotEmpty, IsString } from "class-validator";
+import { Transform } from "class-transformer";
+import sanitizeHtml from "sanitize-html";
 import { Types } from "mongoose";
-import { UserDocument } from "../schemas/user.schema";
+import { UserDocument } from "~/modules/schemas";
+import { RightsEnum } from "~/modules/common";
 
 export class ExistingMessageDto {
-  @IsDefined()
   @IsNotEmpty()
   @IsString()
   _id: string | Types.ObjectId;
 
-  @IsDefined()
   @IsNotEmpty()
   @IsString()
   roomId: string | Types.ObjectId;
 
-  @IsDefined()
   @IsNotEmpty()
   @IsString()
   timestamp: string;
 
-  @IsDefined()
   @IsNotEmpty()
   @IsString()
+  @Transform(({ value }) => sanitizeHtml(value.trim()))
   text: string;
 
   @IsString()
   attachment?: any[];
 
-  @IsDefined()
-  @IsNotEmpty()
   @IsNotEmpty()
   user: UserDocument;
 
-  @IsDefined()
-  @IsNotEmpty()
   @IsArray()
-  rights: string[];
+  @IsEnum(RightsEnum, { each: true })
+  rights: RightsEnum[];
 }

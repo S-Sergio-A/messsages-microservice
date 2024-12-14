@@ -6,7 +6,7 @@ import { AppModule } from "./app.module";
 import { LoggerService } from "~/modules/common";
 import { ConfigService } from "@nestjs/config";
 
-async function bootstrap() {
+(async () => {
   const app = await NestFactory.create(AppModule);
   const logger = await app.resolve(LoggerService); // Use resolve() for transient scoped providers
   const configService = app.get(ConfigService);
@@ -34,7 +34,4 @@ async function bootstrap() {
   await app.listen(port);
 
   app.useWebSocketAdapter(new IoAdapter(app));
-  await app.listen(process.env.PORT || 3200);
-}
-
-bootstrap();
+})();

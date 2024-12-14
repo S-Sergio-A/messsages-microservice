@@ -1,19 +1,23 @@
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { MongooseModule } from "@nestjs/mongoose";
-import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
 import { Module } from "@nestjs/common";
-import { ValidationModule } from "./pipes/validation.module";
-import { MessageModule } from "./messages/messages.module";
-import { MessagesController } from "./messages/messages.controller";
+import { MessageModule } from "~/modules/messages/messages.module";
+import { RabbitModule } from "~/modules/rabbit";
+import { defaultImports, LoggerModule } from "~/modules/common";
+import { HealthCheckModule } from "~/modules/health-check";
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ...defaultImports,
     ThrottlerModule.forRoot({
-      ttl: 180,
-      limit: 1200,
-      ignoreUserAgents: [new RegExp("googlebot", "gi"), new RegExp("bingbot", "gi")]
+      throttlers: [
+        {
+          ttl: 120,
+          limit: 1000,
+          ignoreUserAgents: [new RegExp("googlebot", "gi"), new RegExp("bingbot", "gi")]
+        }
+      ]
     }),
     MongooseModule.forRoot(
       `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_USER_DATABASE_NAME}?retryWrites=true&w=majority`,
@@ -33,10 +37,11 @@ import { MessagesController } from "./messages/messages.controller";
         connectionName: "room"
       }
     ),
+    LoggerModule,
     MessageModule,
-    ValidationModule
+    RabbitModule,
+    HealthCheckModule
   ],
-  controllers: [MessagesController],
   providers: [
     {
       provide: APP_GUARD,

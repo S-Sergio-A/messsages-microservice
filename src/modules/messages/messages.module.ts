@@ -1,19 +1,21 @@
 import { MongooseModule } from "@nestjs/mongoose";
 import { Module } from "@nestjs/common";
-import { MessagesController } from "./messages.controller";
-import { MessageSchema } from "./schemas/message.schema";
 import { MessagesGateway } from "./messages.gateway";
 import { MessagesService } from "./messages.service";
-import { UserSchema } from "./schemas/user.schema";
-import { RightsSchema } from "./schemas/rights.schema";
+import {
+  ConnectionNamesEnum,
+  MessageSchema,
+  ModelsNamesEnum,
+  RightsSchema,
+  UserSchema
+} from "@ssmovzh/chatterly-common-utils";
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: "Message", schema: MessageSchema }], "message"),
-    MongooseModule.forFeature([{ name: "User", schema: UserSchema }], "user"),
-    MongooseModule.forFeature([{ name: "Rights", schema: RightsSchema }], "room")
+    MongooseModule.forFeature([{ name: ModelsNamesEnum.MESSAGES, schema: MessageSchema }], ConnectionNamesEnum.MESSAGES),
+    MongooseModule.forFeature([{ name: ModelsNamesEnum.USERS, schema: UserSchema }], ConnectionNamesEnum.USERS),
+    MongooseModule.forFeature([{ name: ModelsNamesEnum.RIGHTS, schema: RightsSchema }], ConnectionNamesEnum.ROOMS)
   ],
-  controllers: [MessagesController],
   providers: [MessagesService, MessagesGateway],
   exports: [MessagesGateway, MessagesService]
 })
