@@ -1,5 +1,5 @@
 {
-  "name": "messaging-microservice",
+  "name": "messages-microservice",
   "version": "0.0.2",
   "description": "A microservice responsible for receiving, storing and deleting messages.",
   "author": "Serhii Smovzh",
