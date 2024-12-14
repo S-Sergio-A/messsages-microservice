@@ -1,10 +1,10 @@
 import { IoAdapter } from "@nestjs/platform-socket.io";
 import { NestFactory } from "@nestjs/core";
+import { ConfigService } from "@nestjs/config";
+import { CustomHeadersEnum, LoggerService } from "@ssmovzh/chatterly-common-utils";
 import helmet from "helmet";
 import "reflect-metadata";
 import { AppModule } from "./app.module";
-import { ConfigService } from "@nestjs/config";
-import { LoggerService } from "@ssmovzh/chatterly-common-utils";
 
 (async () => {
   const app = await NestFactory.create(AppModule);
@@ -18,7 +18,7 @@ import { LoggerService } from "@ssmovzh/chatterly-common-utils";
   app.enableCors({
     origin: [clientUrl],
     credentials: true,
-    exposedHeaders: ["X-Access-Token", "X-Refresh-Token", "X-Client-Token", "X-Country", "Content-Type"],
+    exposedHeaders: Object.values(CustomHeadersEnum),
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"]
   });
 
