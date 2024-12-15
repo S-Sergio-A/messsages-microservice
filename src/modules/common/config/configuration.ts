@@ -13,10 +13,7 @@ export default () => ({
   mongoConfig: {
     username: process.env.MONGO_USERNAME,
     password: process.env.MONGO_PASSWORD,
-    clusterUrl: process.env.MONGO_CLUSTER_URL,
-    userDb: process.env.MONGO_USER_DATABASE_NAME,
-    roomsDb: process.env.MONGO_ROOMS_DATABASE_NAME,
-    messagesDb: process.env.MONGO_MESSAGES_DATABASE_NAME
+    clusterUrl: process.env.MONGO_CLUSTER_URL
   },
   rabbitConfig: {
     protocol: "amqp",

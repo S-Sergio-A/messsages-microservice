@@ -24,19 +24,19 @@ import { ConnectionNamesEnum, HealthCheckModule, LoggerModule } from "@ssmovzh/c
       ]
     }),
     MongooseModule.forRoot(
-      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_USER_DATABASE_NAME}?retryWrites=true&w=majority`,
+      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${ConnectionNamesEnum.USERS}?retryWrites=true&w=majority`,
       {
         connectionName: ConnectionNamesEnum.USERS
       }
     ),
     MongooseModule.forRoot(
-      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_ROOMS_DATABASE_NAME}?retryWrites=true&w=majority`,
+      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${ConnectionNamesEnum.ROOMS}?retryWrites=true&w=majority`,
       {
         connectionName: ConnectionNamesEnum.ROOMS
       }
     ),
     MongooseModule.forRoot(
-      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${process.env.MONGO_MESSAGES_DATABASE_NAME}?retryWrites=true&w=majority`,
+      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${ConnectionNamesEnum.MESSAGES}?retryWrites=true&w=majority`,
       {
         connectionName: ConnectionNamesEnum.MESSAGES
       }

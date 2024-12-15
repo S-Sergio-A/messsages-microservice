@@ -30,7 +30,7 @@
     "@nestjs/platform-socket.io": "^10.4.15",
     "@nestjs/throttler": "^6.3.0",
     "@nestjs/websockets": "^10.4.15",
-    "@ssmovzh/chatterly-common-utils": "^1.1.7",
+    "@ssmovzh/chatterly-common-utils": "^1.2.0",
     "amqplib": "^0.10.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",

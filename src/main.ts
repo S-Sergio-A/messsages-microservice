@@ -1,7 +1,7 @@
 import { IoAdapter } from "@nestjs/platform-socket.io";
-import { NestFactory } from "@nestjs/core";
+import { HttpAdapterHost, NestFactory } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
-import { CustomHeadersEnum, LoggerService } from "@ssmovzh/chatterly-common-utils";
+import { CustomHeadersEnum, ExceptionsFilter, LoggerService } from "@ssmovzh/chatterly-common-utils";
 import helmet from "helmet";
 import "reflect-metadata";
 import { AppModule } from "./app.module";
@@ -10,6 +10,8 @@ import { AppModule } from "./app.module";
   const app = await NestFactory.create(AppModule);
   const logger = await app.resolve(LoggerService); // Use resolve() for transient scoped providers
   const configService = app.get(ConfigService);
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new ExceptionsFilter(httpAdapter));
 
   app.useLogger(logger);
   app.use(helmet());
