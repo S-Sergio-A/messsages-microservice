@@ -1,9 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import * as amqp from "amqplib";
 import { ConfigService } from "@nestjs/config";
 import { LoggerService, QueueResponseInterface, RabbitConfigInterface } from "@ssmovzh/chatterly-common-utils";
 import { v4 as uuidv4 } from "uuid";
-import { connect } from "amqplib";
+import { connect, Connection } from "amqplib";
 
 @Injectable()
 export class RabbitProducerService {
@@ -18,7 +17,15 @@ export class RabbitProducerService {
   }
 
   async sendMessage(queueName: string, data: any): Promise<any> {
-    const connection = await connect(this.config);
+    const connection = await connect(
+      this.config?.uri || {
+        protocol: this.config.protocol,
+        hostname: this.config.hostname,
+        port: this.config.port,
+        username: this.config.username,
+        password: this.config.password
+      }
+    );
     const channel = await connection.createChannel();
 
     const replyQueue = await channel.assertQueue("", { exclusive: true }); // Temporary reply queue
@@ -53,12 +60,20 @@ export class RabbitProducerService {
   }
 
   async getQueueInfo(queueName: string): Promise<QueueResponseInterface> {
-    let connection: amqp.Connection;
+    let connection: Connection;
     let channel: {
       assertQueue: (arg0: string, arg1: { durable: boolean }) => any;
     };
     try {
-      connection = await amqp.connect(this.config);
+      connection = await connect(
+        this.config?.uri || {
+          protocol: this.config.protocol,
+          hostname: this.config.hostname,
+          port: this.config.port,
+          username: this.config.username,
+          password: this.config.password
+        }
+      );
       channel = await connection.createChannel();
       const result = await channel.assertQueue(queueName, {
         durable: true
@@ -77,7 +92,7 @@ export class RabbitProducerService {
       assertQueue?: (arg0: string, arg1: { durable: boolean }) => any;
       close?: any;
     },
-    connection: amqp.Connection
+    connection: Connection
   ) {
     try {
       if (channel) {
