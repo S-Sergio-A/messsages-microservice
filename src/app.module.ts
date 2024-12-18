@@ -5,7 +5,8 @@ import { Module } from "@nestjs/common";
 import { MessageModule } from "~/modules/messages/messages.module";
 import { RabbitModule } from "~/modules/rabbit";
 import { defaultImports } from "~/modules/common";
-import { ConnectionNamesEnum, HealthCheckModule, LoggerModule } from "@ssmovzh/chatterly-common-utils";
+import { ConnectionNamesEnum, HealthCheckModule, LoggerModule, MongoConfigInterface } from "@ssmovzh/chatterly-common-utils";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 
 @Module({
   imports: [
@@ -23,24 +24,16 @@ import { ConnectionNamesEnum, HealthCheckModule, LoggerModule } from "@ssmovzh/c
         }
       ]
     }),
-    MongooseModule.forRoot(
-      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${ConnectionNamesEnum.USERS}?retryWrites=true&w=majority&appName=Cluster0`,
-      {
-        connectionName: ConnectionNamesEnum.USERS
-      }
-    ),
-    MongooseModule.forRoot(
-      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${ConnectionNamesEnum.ROOMS}?retryWrites=true&w=majority&appName=Cluster0`,
-      {
-        connectionName: ConnectionNamesEnum.ROOMS
-      }
-    ),
-    MongooseModule.forRoot(
-      `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER_URL}/${ConnectionNamesEnum.MESSAGES}?retryWrites=true&w=majority&appName=Cluster0`,
-      {
-        connectionName: ConnectionNamesEnum.MESSAGES
-      }
-    )
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => {
+        const mongoConfig = configService.get<MongoConfigInterface>("mongoConfig");
+        return {
+          uri: `mongodb+srv://${mongoConfig.username}:${mongoConfig.password}@${mongoConfig.clusterUrl}/${ConnectionNamesEnum.CHATTERLY}?retryWrites=true&w=majority&appName=Cluster0`
+        };
+      },
+      inject: [ConfigService]
+    })
   ],
   providers: [
     {

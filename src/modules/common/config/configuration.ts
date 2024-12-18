@@ -27,7 +27,7 @@ export default () => ({
     username: process.env.RABBIT_USERNAME,
     password: process.env.RABBIT_PASSWORD
   } as RabbitConfigInterface,
-  cloudinaryConfig: {
+  cloudinary: {
     apiKey: process.env.CLOUDINARY_API_KEY,
     apiSecret: process.env.CLOUDINARY_API_SECRET,
     cloudName: process.env.CLOUDINARY_CLOUD_NAME

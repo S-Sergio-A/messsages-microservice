@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 import * as amqp from "amqplib";
 import { ConfigService } from "@nestjs/config";
 import { LoggerService, QueueResponseInterface, RabbitConfigInterface } from "@ssmovzh/chatterly-common-utils";
+import { v4 as uuidv4 } from "uuid";
+import { connect } from "amqplib";
 
 @Injectable()
 export class RabbitProducerService {
@@ -15,29 +17,39 @@ export class RabbitProducerService {
     this.config = this.configService.get<RabbitConfigInterface>("rabbitConfig");
   }
 
-  async sendMessage(queueName: string, tasks: any[]): Promise<void> {
-    try {
-      const connection = await amqp.connect(this.config);
-      const channel = await connection.createChannel();
-      await channel.assertQueue(queueName, {
-        durable: true
-      });
+  async sendMessage(queueName: string, data: any): Promise<any> {
+    const connection = await connect(this.config);
+    const channel = await connection.createChannel();
 
-      for (let i = 0; i < tasks.length; i++) {
-        const msg = JSON.stringify(tasks[i]);
-        channel.sendToQueue(queueName, Buffer.from(msg));
-      }
+    const replyQueue = await channel.assertQueue("", { exclusive: true }); // Temporary reply queue
+    const correlationId = uuidv4(); // Unique ID for this RPC call
 
+    channel.sendToQueue(queueName, Buffer.from(JSON.stringify({ ...data, action: queueName })), {
+      correlationId,
+      replyTo: replyQueue.queue
+    });
+
+    // Wait for the response
+    return new Promise((resolve, reject) => {
+      channel.consume(
+        replyQueue.queue,
+        (msg) => {
+          if (msg.properties.correlationId === correlationId) {
+            resolve(JSON.parse(msg.content.toString())); // Return response
+            channel.close();
+            connection.close();
+          }
+        },
+        { noAck: true }
+      );
+
+      // Timeout for response
       setTimeout(() => {
+        reject(new Error("Timeout: No response from consumer"));
         channel.close();
         connection.close();
-      }, 500);
-
-      this.logger.verbose(`${tasks.length} tasks added to queue ${queueName}`);
-    } catch (error) {
-      this.logger.error(error, error.trace);
-      throw error;
-    }
+      }, 5000);
+    });
   }
 
   async getQueueInfo(queueName: string): Promise<QueueResponseInterface> {

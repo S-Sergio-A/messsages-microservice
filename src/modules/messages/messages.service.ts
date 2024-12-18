@@ -7,7 +7,6 @@ import { v2 as cloudinary } from "cloudinary";
 import { NewMessageDto } from "./dto/new-message.dto";
 import {
   CloudinaryConfigInterface,
-  ConnectionNamesEnum,
   GLOBAL_ERROR_CODES,
   GlobalErrorCodesEnum,
   LoggerService,
@@ -25,9 +24,9 @@ import { ExistingMessageDto } from "~/modules/messages/dto";
 @Injectable()
 export class MessagesService {
   constructor(
-    @InjectModel(ModelsNamesEnum.MESSAGES, ConnectionNamesEnum.MESSAGES) private readonly messageModel: Model<Message>,
-    @InjectModel(ModelsNamesEnum.USERS, ConnectionNamesEnum.USERS) private readonly userModel: Model<User>,
-    @InjectModel(ModelsNamesEnum.RIGHTS, ConnectionNamesEnum.ROOMS) private readonly rightsModel: Model<Right>,
+    @InjectModel(ModelsNamesEnum.MESSAGES) private readonly messageModel: Model<Message>,
+    @InjectModel(ModelsNamesEnum.USERS) private readonly userModel: Model<User>,
+    @InjectModel(ModelsNamesEnum.RIGHTS) private readonly rightsModel: Model<Right>,
     private readonly logger: LoggerService,
     private readonly configService: ConfigService,
     private readonly messagePublisherService: MessagePublisherService
@@ -39,7 +38,7 @@ export class MessagesService {
       messageDto.roomId = new Types.ObjectId(messageDto.roomId);
       const { apiKey, apiSecret, cloudName } = this.configService.get<CloudinaryConfigInterface>("cloudinary");
 
-      if (messageDto.attachment) {
+      if (messageDto.attachment && !!messageDto.attachment.length) {
         cloudinary.config({
           cloud_name: cloudName,
           api_key: apiKey,
@@ -65,6 +64,7 @@ export class MessagesService {
 
       const createdMessage = new this.messageModel(messageDto);
       await createdMessage.save();
+      console.log(createdMessage);
       await this.messagePublisherService.publishMessage(RabbitQueuesEnum.ADD_MESSAGE_REFERENCE, {
         rights,
         roomId: messageDto.roomId,
@@ -90,6 +90,7 @@ export class MessagesService {
         .findOne({ _id: createdMessage._id })
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
     } catch (error) {
+      console.log(error);
       this.logger.error(error, error.trace);
       const { httpCode, msg } = GLOBAL_ERROR_CODES.get(GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR);
 

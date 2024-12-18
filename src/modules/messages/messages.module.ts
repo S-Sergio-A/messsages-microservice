@@ -1,6 +1,6 @@
 import { MongooseModule } from "@nestjs/mongoose";
 import { Module } from "@nestjs/common";
-import { ConnectionNamesEnum, ModelsNamesEnum, Right, Message, User } from "@ssmovzh/chatterly-common-utils";
+import { MessageSchema, ModelsNamesEnum, RightsSchema, UserSchema } from "@ssmovzh/chatterly-common-utils";
 import { MessagesGateway } from "./messages.gateway";
 import { MessagesService } from "./messages.service";
 import { MessagePublisherService } from "~/modules/messages/message-publisher.service";
@@ -8,9 +8,9 @@ import { RabbitModule } from "~/modules/rabbit";
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: ModelsNamesEnum.MESSAGES, schema: Message }], ConnectionNamesEnum.MESSAGES),
-    MongooseModule.forFeature([{ name: ModelsNamesEnum.USERS, schema: User }], ConnectionNamesEnum.USERS),
-    MongooseModule.forFeature([{ name: ModelsNamesEnum.RIGHTS, schema: Right }], ConnectionNamesEnum.ROOMS),
+    MongooseModule.forFeature([{ name: ModelsNamesEnum.MESSAGES, schema: MessageSchema }]),
+    MongooseModule.forFeature([{ name: ModelsNamesEnum.USERS, schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: ModelsNamesEnum.RIGHTS, schema: RightsSchema }]),
     RabbitModule
   ],
   providers: [MessagesGateway, MessagesService, MessagePublisherService],
