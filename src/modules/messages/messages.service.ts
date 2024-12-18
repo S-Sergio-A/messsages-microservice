@@ -64,7 +64,6 @@ export class MessagesService {
 
       const createdMessage = new this.messageModel(messageDto);
       await createdMessage.save();
-      console.log(createdMessage);
       await this.messagePublisherService.publishMessage(RabbitQueuesEnum.ADD_MESSAGE_REFERENCE, {
         rights,
         roomId: messageDto.roomId,
@@ -90,7 +89,6 @@ export class MessagesService {
         .findOne({ _id: createdMessage._id })
         .populate("user", "id firstName lastName birthday username email phoneNumber photo", this.userModel);
     } catch (error) {
-      console.log(error);
       this.logger.error(error, error.trace);
       const { httpCode, msg } = GLOBAL_ERROR_CODES.get(GlobalErrorCodesEnum.INTERNAL_SERVER_ERROR);
 
